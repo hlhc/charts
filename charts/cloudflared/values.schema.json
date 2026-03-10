@@ -1,0 +1,792 @@
+{
+    "title": "Chart Values",
+    "type": "object",
+    "properties": {
+        "global": {
+            "type": "object",
+            "properties": {
+                "imageRegistry": {
+                    "type": "string",
+                    "description": "Global Docker image registry",
+                    "default": ""
+                },
+                "imagePullSecrets": {
+                    "type": "array",
+                    "description": "Global Docker registry secret names as an array",
+                    "default": [],
+                    "items": {}
+                },
+                "security": {
+                    "type": "object",
+                    "properties": {
+                        "allowInsecureImages": {
+                            "type": "boolean",
+                            "description": "Allows skipping image verification",
+                            "default": false
+                        }
+                    }
+                },
+                "compatibility": {
+                    "type": "object",
+                    "properties": {
+                        "openshift": {
+                            "type": "object",
+                            "properties": {
+                                "adaptSecurityContext": {
+                                    "type": "string",
+                                    "description": "Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: auto (apply if the detected running cluster is Openshift), force (perform the adaptation always), disabled (do not perform adaptation)",
+                                    "default": "auto"
+                                }
+                            }
+                        },
+                        "omitEmptySeLinuxOptions": {
+                            "type": "boolean",
+                            "description": "If set to true, removes the seLinuxOptions from the securityContexts when it is set to an empty object",
+                            "default": false
+                        }
+                    }
+                }
+            }
+        },
+        "kubeVersion": {
+            "type": "string",
+            "description": "Override Kubernetes version reported by .Capabilities",
+            "default": ""
+        },
+        "apiVersions": {
+            "type": "array",
+            "description": "Override Kubernetes API versions reported by .Capabilities",
+            "default": [],
+            "items": {}
+        },
+        "nameOverride": {
+            "type": "string",
+            "description": "String to partially override common.names.name",
+            "default": ""
+        },
+        "fullnameOverride": {
+            "type": "string",
+            "description": "String to fully override common.names.fullname",
+            "default": ""
+        },
+        "namespaceOverride": {
+            "type": "string",
+            "description": "String to fully override common.names.namespace",
+            "default": ""
+        },
+        "commonLabels": {
+            "type": "object",
+            "description": "Labels to add to all deployed objects",
+            "default": {}
+        },
+        "commonAnnotations": {
+            "type": "object",
+            "description": "Annotations to add to all deployed objects",
+            "default": {}
+        },
+        "clusterDomain": {
+            "type": "string",
+            "description": "Kubernetes cluster domain name",
+            "default": "cluster.local"
+        },
+        "extraDeploy": {
+            "type": "array",
+            "description": "Array of extra objects to deploy with the release",
+            "default": [],
+            "items": {}
+        },
+        "diagnosticMode": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "description": "Enable diagnostic mode (all probes will be disabled and the command will be overridden)",
+                    "default": false
+                },
+                "command": {
+                    "type": "array",
+                    "description": "Command to override all containers in the chart release",
+                    "default": [
+                        "sleep"
+                    ],
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "args": {
+                    "type": "array",
+                    "description": "Args to override all containers in the chart release",
+                    "default": [
+                        "infinity"
+                    ],
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "cloudflared": {
+            "type": "object",
+            "properties": {
+                "image": {
+                    "type": "object",
+                    "properties": {
+                        "registry": {
+                            "type": "string",
+                            "description": "cloudflared image registry",
+                            "default": "docker.io"
+                        },
+                        "repository": {
+                            "type": "string",
+                            "description": "cloudflared image repository",
+                            "default": "cloudflare/cloudflared"
+                        },
+                        "digest": {
+                            "type": "string",
+                            "description": "cloudflared image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag",
+                            "default": ""
+                        },
+                        "pullPolicy": {
+                            "type": "string",
+                            "description": "cloudflared image pull policy",
+                            "default": "IfNotPresent"
+                        },
+                        "pullSecrets": {
+                            "type": "array",
+                            "description": "cloudflared image pull secrets",
+                            "default": [],
+                            "items": {}
+                        },
+                        "debug": {
+                            "type": "boolean",
+                            "description": "Enable cloudflared image debug mode",
+                            "default": false
+                        }
+                    }
+                },
+                "kind": {
+                    "type": "string",
+                    "description": "Workload type: DaemonSet (deploy to all nodes) or Deployment",
+                    "default": "DaemonSet"
+                },
+                "replicaCount": {
+                    "type": "number",
+                    "description": "Number of cloudflared replicas to deploy (only used when kind=Deployment)",
+                    "default": 1
+                },
+                "containerPorts": {
+                    "type": "object",
+                    "properties": {
+                        "metrics": {
+                            "type": "number",
+                            "description": "cloudflared metrics/health container port",
+                            "default": 2000
+                        }
+                    }
+                },
+                "extraContainerPorts": {
+                    "type": "array",
+                    "description": "Optionally specify extra list of additional ports for cloudflared containers",
+                    "default": [],
+                    "items": {}
+                },
+                "livenessProbe": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "Enable livenessProbe on cloudflared containers",
+                            "default": true
+                        },
+                        "httpGet": {
+                            "type": "object",
+                            "properties": {
+                                "path": {
+                                    "type": "string",
+                                    "description": "Path for livenessProbe",
+                                    "default": "/ready"
+                                },
+                                "port": {
+                                    "type": "number",
+                                    "description": "Port for livenessProbe",
+                                    "default": 2000
+                                }
+                            }
+                        },
+                        "initialDelaySeconds": {
+                            "type": "number",
+                            "description": "Initial delay seconds for livenessProbe",
+                            "default": 10
+                        },
+                        "periodSeconds": {
+                            "type": "number",
+                            "description": "Period seconds for livenessProbe",
+                            "default": 10
+                        },
+                        "timeoutSeconds": {
+                            "type": "number",
+                            "description": "Timeout seconds for livenessProbe",
+                            "default": 5
+                        },
+                        "failureThreshold": {
+                            "type": "number",
+                            "description": "Failure threshold for livenessProbe",
+                            "default": 1
+                        },
+                        "successThreshold": {
+                            "type": "number",
+                            "description": "Success threshold for livenessProbe",
+                            "default": 1
+                        }
+                    }
+                },
+                "readinessProbe": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "Enable readinessProbe on cloudflared containers",
+                            "default": true
+                        },
+                        "httpGet": {
+                            "type": "object",
+                            "properties": {
+                                "path": {
+                                    "type": "string",
+                                    "description": "Path for readinessProbe",
+                                    "default": "/ready"
+                                },
+                                "port": {
+                                    "type": "number",
+                                    "description": "Port for readinessProbe",
+                                    "default": 2000
+                                }
+                            }
+                        },
+                        "initialDelaySeconds": {
+                            "type": "number",
+                            "description": "Initial delay seconds for readinessProbe",
+                            "default": 10
+                        },
+                        "periodSeconds": {
+                            "type": "number",
+                            "description": "Period seconds for readinessProbe",
+                            "default": 10
+                        },
+                        "timeoutSeconds": {
+                            "type": "number",
+                            "description": "Timeout seconds for readinessProbe",
+                            "default": 5
+                        },
+                        "failureThreshold": {
+                            "type": "number",
+                            "description": "Failure threshold for readinessProbe",
+                            "default": 3
+                        },
+                        "successThreshold": {
+                            "type": "number",
+                            "description": "Success threshold for readinessProbe",
+                            "default": 1
+                        }
+                    }
+                },
+                "startupProbe": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "Enable startupProbe on cloudflared containers",
+                            "default": false
+                        },
+                        "httpGet": {
+                            "type": "object",
+                            "properties": {
+                                "path": {
+                                    "type": "string",
+                                    "description": "Path for startupProbe",
+                                    "default": "/ready"
+                                },
+                                "port": {
+                                    "type": "number",
+                                    "description": "Port for startupProbe",
+                                    "default": 2000
+                                }
+                            }
+                        },
+                        "initialDelaySeconds": {
+                            "type": "number",
+                            "description": "Initial delay seconds for startupProbe",
+                            "default": 10
+                        },
+                        "periodSeconds": {
+                            "type": "number",
+                            "description": "Period seconds for startupProbe",
+                            "default": 10
+                        },
+                        "timeoutSeconds": {
+                            "type": "number",
+                            "description": "Timeout seconds for startupProbe",
+                            "default": 5
+                        },
+                        "failureThreshold": {
+                            "type": "number",
+                            "description": "Failure threshold for startupProbe",
+                            "default": 3
+                        },
+                        "successThreshold": {
+                            "type": "number",
+                            "description": "Success threshold for startupProbe",
+                            "default": 1
+                        }
+                    }
+                },
+                "customLivenessProbe": {
+                    "type": "object",
+                    "description": "Custom livenessProbe that overrides the default one",
+                    "default": {}
+                },
+                "customReadinessProbe": {
+                    "type": "object",
+                    "description": "Custom readinessProbe that overrides the default one",
+                    "default": {}
+                },
+                "customStartupProbe": {
+                    "type": "object",
+                    "description": "Custom startupProbe that overrides the default one",
+                    "default": {}
+                },
+                "resourcesPreset": {
+                    "type": "string",
+                    "description": "Set cloudflared container resources according to one common preset (allowed values: none, nano, micro, small, medium, large, xlarge, 2xlarge). This is ignored if cloudflared.resources is set (cloudflared.resources is recommended for production).",
+                    "default": "nano"
+                },
+                "resources": {
+                    "type": "object",
+                    "description": "Set cloudflared container requests and limits for different resources like CPU or memory (essential for production workloads)",
+                    "default": {}
+                },
+                "podSecurityContext": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "Enable cloudflared pods' Security Context",
+                            "default": true
+                        },
+                        "fsGroupChangePolicy": {
+                            "type": "string",
+                            "description": "Set filesystem group change policy for cloudflared pods",
+                            "default": "OnRootMismatch"
+                        },
+                        "sysctls": {
+                            "type": "array",
+                            "description": "Set kernel settings using the sysctl interface for cloudflared pods",
+                            "default": [],
+                            "items": {}
+                        },
+                        "supplementalGroups": {
+                            "type": "array",
+                            "description": "Set filesystem extra groups for cloudflared pods",
+                            "default": [],
+                            "items": {}
+                        },
+                        "fsGroup": {
+                            "type": "number",
+                            "description": "Set fsGroup in cloudflared pods' Security Context",
+                            "default": 65532
+                        }
+                    }
+                },
+                "containerSecurityContext": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "Enabled cloudflared container' Security Context",
+                            "default": true
+                        },
+                        "runAsUser": {
+                            "type": "number",
+                            "description": "Set runAsUser in cloudflared container' Security Context",
+                            "default": 65532
+                        },
+                        "runAsGroup": {
+                            "type": "number",
+                            "description": "Set runAsGroup in cloudflared container' Security Context",
+                            "default": 65532
+                        },
+                        "runAsNonRoot": {
+                            "type": "boolean",
+                            "description": "Set runAsNonRoot in cloudflared container' Security Context",
+                            "default": true
+                        },
+                        "readOnlyRootFilesystem": {
+                            "type": "boolean",
+                            "description": "Set readOnlyRootFilesystem in cloudflared container' Security Context",
+                            "default": true
+                        },
+                        "privileged": {
+                            "type": "boolean",
+                            "description": "Set privileged in cloudflared container' Security Context",
+                            "default": false
+                        },
+                        "allowPrivilegeEscalation": {
+                            "type": "boolean",
+                            "description": "Set allowPrivilegeEscalation in cloudflared container' Security Context",
+                            "default": false
+                        },
+                        "capabilities": {
+                            "type": "object",
+                            "properties": {
+                                "drop": {
+                                    "type": "array",
+                                    "description": "List of capabilities to be dropped in cloudflared container",
+                                    "default": [
+                                        "ALL"
+                                    ],
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        },
+                        "seccompProfile": {
+                            "type": "object",
+                            "properties": {
+                                "type": {
+                                    "type": "string",
+                                    "description": "Set seccomp profile in cloudflared container",
+                                    "default": "RuntimeDefault"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tunnelSecrets": {
+                    "type": "object",
+                    "properties": {
+                        "base64EncodedPemFile": {
+                            "type": "string",
+                            "description": "Base64 encoded tunnel certificate PEM file",
+                            "default": ""
+                        },
+                        "base64EncodedConfigJsonFile": {
+                            "type": "string",
+                            "description": "Base64 encoded tunnel credentials JSON file",
+                            "default": ""
+                        },
+                        "existingPemFileSecret": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Name of an existing secret containing the tunnel certificate PEM file. If set, base64EncodedPemFile is ignored.",
+                                    "default": ""
+                                },
+                                "key": {
+                                    "type": "string",
+                                    "description": "Key of the certificate PEM file in the existing secret",
+                                    "default": "cert.pem"
+                                }
+                            }
+                        },
+                        "existingConfigJsonFileSecret": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Name of an existing secret containing the tunnel credentials JSON file. If set, base64EncodedConfigJsonFile is ignored.",
+                                    "default": ""
+                                },
+                                "key": {
+                                    "type": "string",
+                                    "description": "Key of the credentials JSON file in the existing secret",
+                                    "default": "credentials.json"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tunnelConfig": {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "Cloudflare tunnel name (required)",
+                            "default": ""
+                        },
+                        "metricsUpdateFrequency": {
+                            "type": "string",
+                            "description": "Frequency to update tunnel metrics",
+                            "default": "5s"
+                        },
+                        "autoUpdateFrequency": {
+                            "type": "string",
+                            "description": "Frequency to check for cloudflared updates",
+                            "default": "24h"
+                        },
+                        "noAutoUpdate": {
+                            "type": "boolean",
+                            "description": "Disable auto-update of cloudflared binary",
+                            "default": true
+                        },
+                        "gracePeriod": {
+                            "type": "string",
+                            "description": "Grace period before tunnel shutdown",
+                            "default": "30s"
+                        },
+                        "retries": {
+                            "type": "number",
+                            "description": "Number of retries for cloudflared connections",
+                            "default": 5
+                        },
+                        "protocol": {
+                            "type": "string",
+                            "description": "Tunnel protocol (auto, http2, h2mux, quic)",
+                            "default": "auto"
+                        },
+                        "logLevel": {
+                            "type": "string",
+                            "description": "Tunnel log level (info, warn, error, fatal, panic)",
+                            "default": "info"
+                        },
+                        "transportLogLevel": {
+                            "type": "string",
+                            "description": "Tunnel transport log level (info, warn, error, fatal, panic)",
+                            "default": "warn"
+                        },
+                        "connectTimeout": {
+                            "type": "string",
+                            "description": "Timeout for establishing new connections",
+                            "default": "30s"
+                        },
+                        "warpRouting": {
+                            "type": "boolean",
+                            "description": "Enable warp routing",
+                            "default": false
+                        }
+                    }
+                },
+                "routes": {
+                    "type": "array",
+                    "description": "Cloudflare tunnel ingress routing rules",
+                    "default": "[]",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "existingConfigmap": {
+                    "type": "string",
+                    "description": "Name of an existing ConfigMap with the cloudflared config. If set, the configmap.yaml template is skipped.",
+                    "default": ""
+                },
+                "command": {
+                    "type": "array",
+                    "description": "Override default cloudflared container command (useful when using custom images)",
+                    "default": [],
+                    "items": {}
+                },
+                "args": {
+                    "type": "array",
+                    "description": "Override default cloudflared container args (useful when using custom images)",
+                    "default": [],
+                    "items": {}
+                },
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "Mount Service Account token in cloudflared pods",
+                    "default": false
+                },
+                "hostAliases": {
+                    "type": "array",
+                    "description": "cloudflared pods host aliases",
+                    "default": [],
+                    "items": {}
+                },
+                "daemonsetAnnotations": {
+                    "type": "object",
+                    "description": "Annotations for cloudflared DaemonSet",
+                    "default": {}
+                },
+                "deploymentAnnotations": {
+                    "type": "object",
+                    "description": "Annotations for cloudflared Deployment",
+                    "default": {}
+                },
+                "podLabels": {
+                    "type": "object",
+                    "description": "Extra labels for cloudflared pods",
+                    "default": {}
+                },
+                "podAnnotations": {
+                    "type": "object",
+                    "description": "Annotations for cloudflared pods",
+                    "default": {}
+                },
+                "podAffinityPreset": {
+                    "type": "string",
+                    "description": "Pod affinity preset. Ignored if `cloudflared.affinity` is set. Allowed values: `soft` or `hard`",
+                    "default": ""
+                },
+                "podAntiAffinityPreset": {
+                    "type": "string",
+                    "description": "Pod anti-affinity preset. Ignored if `cloudflared.affinity` is set. Allowed values: `soft` or `hard`",
+                    "default": "soft"
+                },
+                "nodeAffinityPreset": {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "description": "Node affinity preset type. Ignored if `cloudflared.affinity` is set. Allowed values: `soft` or `hard`",
+                            "default": ""
+                        },
+                        "key": {
+                            "type": "string",
+                            "description": "Node label key to match. Ignored if `cloudflared.affinity` is set",
+                            "default": ""
+                        },
+                        "values": {
+                            "type": "array",
+                            "description": "Node label values to match. Ignored if `cloudflared.affinity` is set",
+                            "default": [],
+                            "items": {}
+                        }
+                    }
+                },
+                "affinity": {
+                    "type": "object",
+                    "description": "Affinity for cloudflared pods assignment",
+                    "default": {}
+                },
+                "tolerations": {
+                    "type": "array",
+                    "description": "Tolerations for cloudflared pods assignment",
+                    "default": [],
+                    "items": {}
+                },
+                "updateStrategy": {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "description": "cloudflared deployment/daemonset strategy type",
+                            "default": "RollingUpdate"
+                        }
+                    }
+                },
+                "priorityClassName": {
+                    "type": "string",
+                    "description": "cloudflared pods' priorityClassName",
+                    "default": ""
+                },
+                "topologySpreadConstraints": {
+                    "type": "array",
+                    "description": "Topology Spread Constraints for cloudflared pod assignment spread across your cluster among failure-domains",
+                    "default": [],
+                    "items": {}
+                },
+                "schedulerName": {
+                    "type": "string",
+                    "description": "Name of the k8s scheduler (other than default) for cloudflared pods",
+                    "default": ""
+                },
+                "terminationGracePeriodSeconds": {
+                    "type": "number",
+                    "description": "Seconds cloudflared pods need to terminate gracefully",
+                    "default": 30
+                },
+                "lifecycleHooks": {
+                    "type": "object",
+                    "description": "for cloudflared containers to automate configuration before or after startup",
+                    "default": {}
+                },
+                "extraEnvVars": {
+                    "type": "array",
+                    "description": "Array with extra environment variables to add to cloudflared containers",
+                    "default": [],
+                    "items": {}
+                },
+                "extraEnvVarsCM": {
+                    "type": "string",
+                    "description": "Name of existing ConfigMap containing extra env vars for cloudflared containers",
+                    "default": ""
+                },
+                "extraEnvVarsSecret": {
+                    "type": "string",
+                    "description": "Name of existing Secret containing extra env vars for cloudflared containers",
+                    "default": ""
+                },
+                "extraVolumes": {
+                    "type": "array",
+                    "description": "Optionally specify extra list of additional volumes for the cloudflared pods",
+                    "default": [],
+                    "items": {}
+                },
+                "extraVolumeMounts": {
+                    "type": "array",
+                    "description": "Optionally specify extra list of additional volumeMounts for the cloudflared containers",
+                    "default": [],
+                    "items": {}
+                },
+                "sidecars": {
+                    "type": "array",
+                    "description": "Add additional sidecar containers to the cloudflared pods",
+                    "default": [],
+                    "items": {}
+                },
+                "initContainers": {
+                    "type": "array",
+                    "description": "Add additional init containers to the cloudflared pods",
+                    "default": [],
+                    "items": {}
+                },
+                "pdb": {
+                    "type": "object",
+                    "properties": {
+                        "create": {
+                            "type": "boolean",
+                            "description": "Enable/disable a Pod Disruption Budget creation",
+                            "default": true
+                        },
+                        "minAvailable": {
+                            "type": "string",
+                            "description": "Minimum number/percentage of pods that should remain scheduled",
+                            "default": ""
+                        },
+                        "maxUnavailable": {
+                            "type": "string",
+                            "description": "Maximum number/percentage of pods that may be made unavailable. Defaults to `1` if both `cloudflared.pdb.minAvailable` and `cloudflared.pdb.maxUnavailable` are empty.",
+                            "default": ""
+                        }
+                    }
+                }
+            }
+        },
+        "serviceAccount": {
+            "type": "object",
+            "properties": {
+                "create": {
+                    "type": "boolean",
+                    "description": "Specifies whether a ServiceAccount should be created",
+                    "default": true
+                },
+                "name": {
+                    "type": "string",
+                    "description": "The name of the ServiceAccount to use. If not set and create is true, a name is generated using the fullname template.",
+                    "default": ""
+                },
+                "annotations": {
+                    "type": "object",
+                    "description": "Additional Service Account annotations (evaluated as a template)",
+                    "default": {}
+                },
+                "automountServiceAccountToken": {
+                    "type": "boolean",
+                    "description": "Automount ServiceAccount token",
+                    "default": false
+                }
+            }
+        }
+    }
+}
