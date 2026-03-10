@@ -21,7 +21,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2 # need HEAD~1 to compare versions
+          fetch-depth: 0 # full history so github.event.before is always reachable
 
       - name: Find charts with bumped versions
         id: detect
@@ -31,9 +31,14 @@ jobs:
 
           charts='[]'
           for chart_yaml in charts/*/Chart.yaml; do
+            # skip library charts (e.g. common)
+            if grep -qE '^type:[[:space:]]*library' "$chart_yaml"; then
+              continue
+            fi
+
             chart_name=$(basename "$(dirname "$chart_yaml")")
             current=$(grep -m1 '^version:' "$chart_yaml" | awk '{print $2}')
-            previous=$(git show HEAD~1:"${chart_yaml}" 2>/dev/null | grep -m1 '^version:' | awk '{print $2}' || true)
+            previous=$(git show "${{ github.event.before }}":"${chart_yaml}" 2>/dev/null | grep -m1 '^version:' | awk '{print $2}' || true)
 
             if [[ "$current" != "$previous" ]]; then
               echo "Version change detected: ${chart_name} ${previous:-<new>} -> ${current}"
@@ -67,7 +72,6 @@ jobs:
       CHART_NAME: ${{ matrix.name }}
       CHART_VERSION: ${{ matrix.version }}
       REGISTRY: ghcr.io/${{ github.repository_owner }}/charts
-      REPO: ${{ github.repository }}
 
     steps:
       - name: Checkout
@@ -119,10 +123,10 @@ jobs:
           echo "ref=${REGISTRY}/${CHART_NAME}:${CHART_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Sign chart with cosign (keyless)
-        run: |
-          set -euo pipefail
-          cosign sign --yes \
-            "${{ steps.push.outputs.ref }}@${{ steps.push.outputs.digest }}"
+        env:
+          REF: ${{ steps.push.outputs.ref }}
+          DIGEST: ${{ steps.push.outputs.digest }}
+        run: echo "${REF}" | xargs -I {} cosign sign --yes {}@${DIGEST}
 
       - name: Create Git tag
         run: |
@@ -138,38 +142,30 @@ jobs:
           fi
 
       - name: Create GitHub release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          tag="${CHART_NAME}-${CHART_VERSION}"
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}
+          name: ${{ env.CHART_NAME }} ${{ env.CHART_VERSION }}
+          make_latest: true
+          files: dist/${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz
+          body: |
+            ## ${{ env.CHART_NAME }} ${{ env.CHART_VERSION }}
 
-          # write notes to a temp file to avoid backslash/quoting issues
-          notes_file=$(mktemp)
-          trap 'rm -f "$notes_file"' EXIT
+            ### Install
 
-          cat > "$notes_file" <<NOTES
-          ## ${CHART_NAME} ${CHART_VERSION}
+            ```bash
+            helm install ${{ env.CHART_NAME }} \
+              oci://${{ env.REGISTRY }}/${{ env.CHART_NAME }} \
+              --version ${{ env.CHART_VERSION }}
+            ```
 
-          ### Install
+            ### Verify the cosign signature
 
-          \`\`\`bash
-          helm install ${CHART_NAME} \\
-            oci://${REGISTRY}/${CHART_NAME} \\
-            --version ${CHART_VERSION}
-          \`\`\`
+            All images are signed with [Sigstore Cosign](https://github.com/sigstore/cosign).
 
-          ### Verify the cosign signature
-
-          \`\`\`bash
-          cosign verify \\
-            ${REGISTRY}/${CHART_NAME}:${CHART_VERSION} \\
-            --certificate-identity-regexp="https://github.com/${REPO}/.github/workflows/.*" \\
-            --certificate-oidc-issuer="https://token.actions.githubusercontent.com"
-          \`\`\`
-          NOTES
-
-          gh release create "$tag" \
-            --title "${CHART_NAME} ${CHART_VERSION}" \
-            --notes-file "$notes_file" \
-            "dist/${CHART_NAME}-${CHART_VERSION}.tgz"
+            ```bash
+            cosign verify \
+              ${{ env.REGISTRY }}/${{ env.CHART_NAME }}:${{ env.CHART_VERSION }} \
+              --certificate-identity-regexp='https://github.com/${{ github.repository }}/.github/workflows/.*' \
+              --certificate-oidc-issuer='https://token.actions.githubusercontent.com'
+            ```
