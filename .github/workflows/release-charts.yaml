@@ -1,0 +1,175 @@
+name: Release Charts
+
+on:
+  push:
+    branches:
+      - main
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # ── 1. Detect which charts had their version bumped ─────────────────────────
+  detect:
+    name: Detect version changes
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.detect.outputs.matrix }}
+      has_changes: ${{ steps.detect.outputs.has_changes }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # need HEAD~1 to compare versions
+
+      - name: Find charts with bumped versions
+        id: detect
+        run: |
+          set -euo pipefail
+          shopt -s nullglob  # empty glob → empty list, not literal string
+
+          charts='[]'
+          for chart_yaml in charts/*/Chart.yaml; do
+            chart_name=$(basename "$(dirname "$chart_yaml")")
+            current=$(grep -m1 '^version:' "$chart_yaml" | awk '{print $2}')
+            previous=$(git show HEAD~1:"${chart_yaml}" 2>/dev/null | grep -m1 '^version:' | awk '{print $2}' || true)
+
+            if [[ "$current" != "$previous" ]]; then
+              echo "Version change detected: ${chart_name} ${previous:-<new>} -> ${current}"
+              charts=$(printf '%s' "$charts" | jq -c --arg name "$chart_name" --arg version "$current" \
+                '. + [{"name": $name, "version": $version}]')
+            fi
+          done
+
+          if [[ "$charts" == "[]" ]]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "matrix={\"include\":[]}" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            printf 'matrix={"include":%s}\n' "$charts" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ── 2. Package → push OCI → sign with cosign → tag + GitHub release ─────────
+  release:
+    name: Release ${{ matrix.name }}@${{ matrix.version }}
+    needs: detect
+    if: needs.detect.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # create tags + releases
+      packages: write   # push to GHCR
+      id-token: write   # keyless cosign signing via OIDC
+    strategy:
+      matrix: ${{ fromJson(needs.detect.outputs.matrix) }}
+      fail-fast: false
+    env:
+      CHART_NAME: ${{ matrix.name }}
+      CHART_VERSION: ${{ matrix.version }}
+      REGISTRY: ghcr.io/${{ github.repository_owner }}/charts
+      REPO: ${{ github.repository }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: latest
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v4.1.0
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Helm registry login (OCI)
+        run: |
+          set -euo pipefail
+          printf '%s' "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io \
+            --username "${{ github.actor }}" \
+            --password-stdin
+
+      - name: Build chart dependencies
+        run: helm dependency update "charts/${CHART_NAME}"
+
+      - name: Package chart
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          helm package "charts/${CHART_NAME}" --destination dist
+
+      - name: Push chart to OCI registry
+        id: push
+        run: |
+          set -euo pipefail
+          output=$(helm push "dist/${CHART_NAME}-${CHART_VERSION}.tgz" "oci://${REGISTRY}" 2>&1)
+          printf '%s\n' "$output"
+          digest=$(printf '%s\n' "$output" | grep -oP '(?<=^Digest: )sha256:\S+')
+          if [[ -z "$digest" ]]; then
+            echo "ERROR: could not extract digest from helm push output" >&2
+            exit 1
+          fi
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
+          echo "ref=${REGISTRY}/${CHART_NAME}:${CHART_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Sign chart with cosign (keyless)
+        run: |
+          set -euo pipefail
+          cosign sign --yes \
+            "${{ steps.push.outputs.ref }}@${{ steps.push.outputs.digest }}"
+
+      - name: Create Git tag
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          tag="${CHART_NAME}-${CHART_VERSION}"
+          if git rev-parse "refs/tags/${tag}" &>/dev/null; then
+            echo "Tag ${tag} already exists, skipping."
+          else
+            git tag "$tag"
+            git push origin "$tag"
+          fi
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="${CHART_NAME}-${CHART_VERSION}"
+
+          # write notes to a temp file to avoid backslash/quoting issues
+          notes_file=$(mktemp)
+          trap 'rm -f "$notes_file"' EXIT
+
+          cat > "$notes_file" <<NOTES
+          ## ${CHART_NAME} ${CHART_VERSION}
+
+          ### Install
+
+          \`\`\`bash
+          helm install ${CHART_NAME} \\
+            oci://${REGISTRY}/${CHART_NAME} \\
+            --version ${CHART_VERSION}
+          \`\`\`
+
+          ### Verify the cosign signature
+
+          \`\`\`bash
+          cosign verify \\
+            ${REGISTRY}/${CHART_NAME}:${CHART_VERSION} \\
+            --certificate-identity-regexp="https://github.com/${REPO}/.github/workflows/.*" \\
+            --certificate-oidc-issuer="https://token.actions.githubusercontent.com"
+          \`\`\`
+          NOTES
+
+          gh release create "$tag" \
+            --title "${CHART_NAME} ${CHART_VERSION}" \
+            --notes-file "$notes_file" \
+            "dist/${CHART_NAME}-${CHART_VERSION}.tgz"
