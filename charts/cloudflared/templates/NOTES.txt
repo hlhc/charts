@@ -1,0 +1,25 @@
+Cloudflare Tunnel (cloudflared) has been deployed successfully.
+
+Tunnel name: {{ .Values.cloudflared.tunnelConfig.name }}
+
+To complete the setup, go to your Cloudflare dashboard and create a CNAME DNS record
+pointing your hostname(s) to: <TUNNEL_ID>.cfargotunnel.com
+
+The <TUNNEL_ID> can be found in the credentials JSON file used during chart installation.
+
+Workload type: {{ .Values.cloudflared.kind }}
+{{- if eq .Values.cloudflared.kind "DaemonSet" }}
+The tunnel is running on all nodes in your cluster.
+{{- else }}
+The tunnel is running with {{ .Values.cloudflared.replicaCount }} replica(s).
+{{- end }}
+
+Configured routes:
+{{- range .Values.cloudflared.routes }}
+  - {{ if .hostname }}{{ .hostname }} -> {{ end }}{{ .service }}
+{{- end }}
+
+For more information, visit:
+  https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/
+
+{{- include "cloudflared.validateValues" . | nindent 0 }}

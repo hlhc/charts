@@ -1,0 +1,44 @@
+{{- /*
+Copyright Cyrus Ho. All Rights Reserved.
+SPDX-License-Identifier: APACHE-2.0
+*/}}
+
+{{- if not .Values.cloudflared.existingConfigmap -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "common.names.fullname" . }}
+  namespace: {{ include "common.names.namespace" . | quote }}
+  labels: {{- include "common.labels.standard" ( dict "customLabels" .Values.commonLabels "context" $ ) | nindent 4 }}
+    app.kubernetes.io/component: cloudflared
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+data:
+  config.yaml: |
+    tunnel: {{ required "cloudflared.tunnelConfig.name is required" .Values.cloudflared.tunnelConfig.name }}
+    credentials-file: {{ printf "/etc/cloudflared/creds/%s" (ternary .Values.cloudflared.tunnelSecrets.existingConfigJsonFileSecret.key "credentials.json" (ne .Values.cloudflared.tunnelSecrets.existingConfigJsonFileSecret.name "")) }}
+    originRequest:
+      connectTimeout: {{ .Values.cloudflared.tunnelConfig.connectTimeout }}
+{{- if .Values.cloudflared.tunnelConfig.warpRouting }}
+    warp-routing:
+      enabled: true
+{{- end }}
+
+    ingress: {{ toYaml .Values.cloudflared.routes | nindent 6 }}
+
+    metrics: 0.0.0.0:{{ .Values.cloudflared.containerPorts.metrics }}
+    metrics-update-freq: {{ .Values.cloudflared.tunnelConfig.metricsUpdateFrequency }}
+
+    autoupdate-freq: {{ .Values.cloudflared.tunnelConfig.autoUpdateFrequency }}
+    no-autoupdate: {{ .Values.cloudflared.tunnelConfig.noAutoUpdate }}
+
+    grace-period: {{ .Values.cloudflared.tunnelConfig.gracePeriod }}
+
+    retries: {{ .Values.cloudflared.tunnelConfig.retries }}
+
+    protocol: {{ .Values.cloudflared.tunnelConfig.protocol }}
+
+    loglevel: {{ .Values.cloudflared.tunnelConfig.logLevel }}
+    transport-loglevel: {{ .Values.cloudflared.tunnelConfig.transportLogLevel }}
+{{- end }}

@@ -1,0 +1,422 @@
+# Copyright Cyrus Ho. All Rights Reserved.
+# SPDX-License-Identifier: APACHE-2.0
+
+## @section Global parameters
+
+global:
+  ## Global Docker image parameters
+  ## @param global.imageRegistry Global Docker Image registry
+  ## @param global.imagePullSecrets Global Docker registry secret names as an array
+  ##
+  imageRegistry: ""
+  imagePullSecrets: []
+  ## Security parameters
+  ## @param global.security.allowInsecureImages Allows skipping image verification
+  ##
+  security:
+    allowInsecureImages: false
+  ## Compatibility adaptations for Kubernetes platforms
+  ##
+  compatibility:
+    ## @param global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections to make them compatible with Openshift restricted-v2 SCC
+    ##
+    openshift:
+      adaptSecurityContext: auto
+    ## @param global.compatibility.omitEmptySeLinuxOptions If set to true, removes the seLinuxOptions from the securityContexts when it is set to an empty object
+    ##
+    omitEmptySeLinuxOptions: false
+
+## @section Common parameters
+
+## @param kubeVersion Override Kubernetes version reported by .Capabilities
+##
+kubeVersion: ""
+## @param apiVersions Override Kubernetes API versions reported by .Capabilities
+##
+apiVersions: []
+## @param nameOverride String to partially override common.names.name
+##
+nameOverride: ""
+## @param fullnameOverride String to fully override common.names.fullname
+##
+fullnameOverride: ""
+## @param namespaceOverride String to fully override common.names.namespace
+##
+namespaceOverride: ""
+## @param commonLabels Labels to add to all deployed objects
+##
+commonLabels: {}
+## @param commonAnnotations Annotations to add to all deployed objects
+##
+commonAnnotations: {}
+## @param clusterDomain Kubernetes cluster domain name
+##
+clusterDomain: cluster.local
+## @param extraDeploy Array of extra objects to deploy with the release
+##
+extraDeploy: []
+## Diagnostic mode
+## @param diagnosticMode.enabled Enable diagnostic mode (all probes will be disabled and the command will be overridden)
+## @param diagnosticMode.command Command to override all containers in the chart release
+## @param diagnosticMode.args Args to override all containers in the chart release
+##
+diagnosticMode:
+  enabled: false
+  command:
+    - sleep
+  args:
+    - infinity
+
+## @section cloudflared Parameters
+
+## Cloudflare cloudflared image
+## ref: https://hub.docker.com/r/cloudflare/cloudflared/tags/
+## @param cloudflared.image.registry cloudflared image registry
+## @param cloudflared.image.repository cloudflared image repository
+## @skip cloudflared.image.tag cloudflared image tag (immutable tags are recommended)
+## @param cloudflared.image.digest cloudflared image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag
+## @param cloudflared.image.pullPolicy cloudflared image pull policy
+## @param cloudflared.image.pullSecrets cloudflared image pull secrets
+## @param cloudflared.image.debug Enable cloudflared image debug mode
+##
+cloudflared:
+  image:
+    registry: docker.io
+    repository: cloudflare/cloudflared
+    tag: ""
+    digest: ""
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+    debug: false
+  ## @param cloudflared.kind Workload type: DaemonSet (deploy to all nodes) or Deployment
+  ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/
+  ##
+  kind: DaemonSet
+  ## @param cloudflared.replicaCount Number of cloudflared replicas to deploy (only used when kind=Deployment)
+  ##
+  replicaCount: 1
+  ## @param cloudflared.containerPorts.metrics cloudflared metrics/health container port
+  ##
+  containerPorts:
+    metrics: 2000
+  ## @param cloudflared.extraContainerPorts Optionally specify extra list of additional ports for cloudflared containers
+  ##
+  extraContainerPorts: []
+  ## Configure extra options for cloudflared containers' liveness and readiness probes
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/
+  ## @param cloudflared.livenessProbe.enabled Enable livenessProbe on cloudflared containers
+  ## @param cloudflared.livenessProbe.initialDelaySeconds Initial delay seconds for livenessProbe
+  ## @param cloudflared.livenessProbe.periodSeconds Period seconds for livenessProbe
+  ## @param cloudflared.livenessProbe.timeoutSeconds Timeout seconds for livenessProbe
+  ## @param cloudflared.livenessProbe.failureThreshold Failure threshold for livenessProbe
+  ## @param cloudflared.livenessProbe.successThreshold Success threshold for livenessProbe
+  ##
+  livenessProbe:
+    enabled: true
+    httpGet:
+      path: /ready
+      port: 2000
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 1
+    successThreshold: 1
+  ## @param cloudflared.readinessProbe.enabled Enable readinessProbe on cloudflared containers
+  ## @param cloudflared.readinessProbe.initialDelaySeconds Initial delay seconds for readinessProbe
+  ## @param cloudflared.readinessProbe.periodSeconds Period seconds for readinessProbe
+  ## @param cloudflared.readinessProbe.timeoutSeconds Timeout seconds for readinessProbe
+  ## @param cloudflared.readinessProbe.failureThreshold Failure threshold for readinessProbe
+  ## @param cloudflared.readinessProbe.successThreshold Success threshold for readinessProbe
+  ##
+  readinessProbe:
+    enabled: true
+    httpGet:
+      path: /ready
+      port: 2000
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+  ## @param cloudflared.startupProbe.enabled Enable startupProbe on cloudflared containers
+  ## @param cloudflared.startupProbe.initialDelaySeconds Initial delay seconds for startupProbe
+  ## @param cloudflared.startupProbe.periodSeconds Period seconds for startupProbe
+  ## @param cloudflared.startupProbe.timeoutSeconds Timeout seconds for startupProbe
+  ## @param cloudflared.startupProbe.failureThreshold Failure threshold for startupProbe
+  ## @param cloudflared.startupProbe.successThreshold Success threshold for startupProbe
+  ##
+  startupProbe:
+    enabled: false
+    httpGet:
+      path: /ready
+      port: 2000
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+  ## @param cloudflared.customLivenessProbe Custom livenessProbe that overrides the default one
+  ##
+  customLivenessProbe: {}
+  ## @param cloudflared.customReadinessProbe Custom readinessProbe that overrides the default one
+  ##
+  customReadinessProbe: {}
+  ## @param cloudflared.customStartupProbe Custom startupProbe that overrides the default one
+  ##
+  customStartupProbe: {}
+  ## cloudflared resource requests and limits
+  ## ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+  ## @param cloudflared.resourcesPreset Set cloudflared container resources according to one common preset (allowed values: none, nano, micro, small, medium, large, xlarge, 2xlarge). This is ignored if cloudflared.resources is set.
+  ## More information: https://github.com/bitnami/charts/blob/main/bitnami/common/templates/_resources.tpl#L15
+  ##
+  resourcesPreset: "nano"
+  ## @param cloudflared.resources Set cloudflared container requests and limits for different resources like CPU or memory
+  ## Example:
+  ## resources:
+  ##   requests:
+  ##     cpu: 100m
+  ##     memory: 64Mi
+  ##   limits:
+  ##     cpu: 200m
+  ##     memory: 128Mi
+  ##
+  resources: {}
+  ## Configure Pods Security Context
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
+  ## @param cloudflared.podSecurityContext.enabled Enable cloudflared pods' Security Context
+  ## @param cloudflared.podSecurityContext.fsGroup Set fsGroup in cloudflared pods' Security Context
+  ## @param cloudflared.podSecurityContext.fsGroupChangePolicy Set filesystem group change policy for cloudflared pods
+  ## @param cloudflared.podSecurityContext.sysctls Set kernel settings using the sysctl interface for cloudflared pods
+  ## @param cloudflared.podSecurityContext.supplementalGroups Set filesystem extra groups for cloudflared pods
+  ##
+  podSecurityContext:
+    enabled: true
+    fsGroup: 65532
+    fsGroupChangePolicy: "OnRootMismatch"
+    sysctls:
+      - name: net.ipv4.ping_group_range
+        value: "0 2147483647"
+    supplementalGroups: []
+  ## Configure Container Security Context
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container
+  ## @param cloudflared.containerSecurityContext.enabled Enable cloudflared container Security Context
+  ## @param cloudflared.containerSecurityContext.seLinuxOptions Set SELinux options in cloudflared container
+  ## @param cloudflared.containerSecurityContext.runAsUser Set runAsUser in cloudflared container Security Context
+  ## @param cloudflared.containerSecurityContext.runAsGroup Set runAsGroup in cloudflared container Security Context
+  ## @param cloudflared.containerSecurityContext.runAsNonRoot Set runAsNonRoot in cloudflared container Security Context
+  ## @param cloudflared.containerSecurityContext.readOnlyRootFilesystem Set readOnlyRootFilesystem in cloudflared container Security Context
+  ## @param cloudflared.containerSecurityContext.privileged Set privileged in cloudflared container Security Context
+  ## @param cloudflared.containerSecurityContext.allowPrivilegeEscalation Set allowPrivilegeEscalation in cloudflared container Security Context
+  ## @param cloudflared.containerSecurityContext.capabilities.drop List of capabilities to be dropped in cloudflared container
+  ## @param cloudflared.containerSecurityContext.seccompProfile.type Set seccomp profile in cloudflared container
+  ##
+  containerSecurityContext:
+    enabled: true
+    seLinuxOptions: {}
+    runAsUser: 65532
+    runAsGroup: 65532
+    runAsNonRoot: true
+    readOnlyRootFilesystem: true
+    privileged: false
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+    seccompProfile:
+      type: "RuntimeDefault"
+
+  ## @param cloudflared.tunnelSecrets Cloudflare tunnel credential secrets
+  ## ref: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/local-management/create-local-tunnel/
+  ##
+  tunnelSecrets:
+    ## @param cloudflared.tunnelSecrets.base64EncodedPemFile Base64 encoded tunnel certificate PEM file
+    ## Run: base64 -w 0 ~/.cloudflared/cert.pem
+    ##
+    base64EncodedPemFile: ""
+    ## @param cloudflared.tunnelSecrets.base64EncodedConfigJsonFile Base64 encoded tunnel credentials JSON file
+    ## Run: base64 -w 0 ~/.cloudflared/*.json
+    ##
+    base64EncodedConfigJsonFile: ""
+    ## @param cloudflared.tunnelSecrets.existingPemFileSecret.name Name of an existing secret containing the tunnel certificate PEM file. If set, base64EncodedPemFile is ignored.
+    ## @param cloudflared.tunnelSecrets.existingPemFileSecret.key Key of the certificate PEM file in the existing secret
+    ##
+    existingPemFileSecret:
+      name: ""
+      key: "cert.pem"
+    ## @param cloudflared.tunnelSecrets.existingConfigJsonFileSecret.name Name of an existing secret containing the tunnel credentials JSON file. If set, base64EncodedConfigJsonFile is ignored.
+    ## @param cloudflared.tunnelSecrets.existingConfigJsonFileSecret.key Key of the credentials JSON file in the existing secret
+    ##
+    existingConfigJsonFileSecret:
+      name: ""
+      key: "credentials.json"
+
+  ## @param cloudflared.tunnelConfig Cloudflare tunnel daemon configuration
+  ## ref: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/configuration/arguments/
+  ##
+  tunnelConfig:
+    ## @param cloudflared.tunnelConfig.name Cloudflare tunnel name (required)
+    ##
+    name: ""
+    ## @param cloudflared.tunnelConfig.metricsUpdateFrequency Frequency to update tunnel metrics
+    ##
+    metricsUpdateFrequency: 5s
+    ## @param cloudflared.tunnelConfig.autoUpdateFrequency Frequency to check for cloudflared updates
+    ##
+    autoUpdateFrequency: 24h
+    ## @param cloudflared.tunnelConfig.noAutoUpdate Disable auto-update of cloudflared binary
+    ##
+    noAutoUpdate: true
+    ## @param cloudflared.tunnelConfig.gracePeriod Grace period before tunnel shutdown
+    ##
+    gracePeriod: 30s
+    ## @param cloudflared.tunnelConfig.retries Number of retries for cloudflared connections
+    ##
+    retries: 5
+    ## @param cloudflared.tunnelConfig.protocol Tunnel protocol (auto, http2, h2mux, quic)
+    ##
+    protocol: auto
+    ## @param cloudflared.tunnelConfig.logLevel Tunnel log level (info, warn, error, fatal, panic)
+    ##
+    logLevel: info
+    ## @param cloudflared.tunnelConfig.transportLogLevel Tunnel transport log level (info, warn, error, fatal, panic)
+    ##
+    transportLogLevel: warn
+    ## @param cloudflared.tunnelConfig.connectTimeout Timeout for establishing new connections
+    ##
+    connectTimeout: 30s
+    ## @param cloudflared.tunnelConfig.warpRouting Enable warp routing
+    ##
+    warpRouting: false
+
+  ## @param cloudflared.routes Cloudflare tunnel ingress routing rules
+  ## ref: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/configure-tunnels/local-management/configuration-file/#how-traffic-is-matched
+  ## Example:
+  ## routes:
+  ##   - hostname: example.com
+  ##     service: http://my-service.default.svc.cluster.local:80
+  ##   - service: http_status:404
+  ##
+  routes:
+    - hostname: example.com
+      service: http://traefik.kube-system.svc.cluster.local:80
+    - service: http_status:404
+
+  ## @param cloudflared.existingConfigmap Name of an existing ConfigMap with the cloudflared config. If set, the configmap.yaml template is skipped.
+  ##
+  existingConfigmap: ""
+  ## @param cloudflared.command Override default cloudflared container command
+  ##
+  command: []
+  ## @param cloudflared.args Override default cloudflared container args
+  ##
+  args: []
+  ## @param cloudflared.automountServiceAccountToken Mount Service Account token in cloudflared pods
+  ##
+  automountServiceAccountToken: false
+  ## @param cloudflared.hostAliases cloudflared pods host aliases
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/add-entries-to-pod-etc-hosts-with-host-aliases/
+  ##
+  hostAliases: []
+  ## @param cloudflared.daemonsetAnnotations Annotations for cloudflared DaemonSet
+  ##
+  daemonsetAnnotations: {}
+  ## @param cloudflared.deploymentAnnotations Annotations for cloudflared Deployment
+  ##
+  deploymentAnnotations: {}
+  ## @param cloudflared.podLabels Extra labels for cloudflared pods
+  ##
+  podLabels: {}
+  ## @param cloudflared.podAnnotations Annotations for cloudflared pods
+  ##
+  podAnnotations: {}
+  ## @param cloudflared.podAffinityPreset Pod affinity preset. Ignored if cloudflared.affinity is set. Allowed values: soft or hard
+  ##
+  podAffinityPreset: ""
+  ## @param cloudflared.podAntiAffinityPreset Pod anti-affinity preset. Ignored if cloudflared.affinity is set. Allowed values: soft or hard
+  ##
+  podAntiAffinityPreset: soft
+  ## Node cloudflared.affinity preset
+  ## @param cloudflared.nodeAffinityPreset.type Node affinity preset type. Ignored if cloudflared.affinity is set. Allowed values: soft or hard
+  ## @param cloudflared.nodeAffinityPreset.key Node label key to match. Ignored if cloudflared.affinity is set
+  ## @param cloudflared.nodeAffinityPreset.values Node label values to match. Ignored if cloudflared.affinity is set
+  ##
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+    values: []
+  ## @param cloudflared.affinity Affinity for cloudflared pods assignment
+  ## NOTE: cloudflared.podAffinityPreset, cloudflared.podAntiAffinityPreset, and cloudflared.nodeAffinityPreset will be ignored when it's set
+  ##
+  affinity: {}
+  ## @param cloudflared.nodeSelector Node labels for cloudflared pods assignment
+  ##
+  nodeSelector:
+    kubernetes.io/os: linux
+  ## @param cloudflared.tolerations Tolerations for cloudflared pods assignment
+  ##
+  tolerations:
+    ## Schedule on all nodes including tainted ones
+    - effect: NoSchedule
+      operator: Exists
+  ## @param cloudflared.updateStrategy.type cloudflared deployment/daemonset strategy type
+  ##
+  updateStrategy:
+    type: RollingUpdate
+  ## @param cloudflared.priorityClassName cloudflared pods' priorityClassName
+  ##
+  priorityClassName: ""
+  ## @param cloudflared.topologySpreadConstraints Topology Spread Constraints for cloudflared pods
+  ##
+  topologySpreadConstraints: []
+  ## @param cloudflared.schedulerName Name of the k8s scheduler for cloudflared pods
+  ##
+  schedulerName: ""
+  ## @param cloudflared.terminationGracePeriodSeconds Seconds cloudflared pods need to terminate gracefully
+  ##
+  terminationGracePeriodSeconds: 30
+  ## @param cloudflared.lifecycleHooks Lifecycle hooks for cloudflared containers
+  ##
+  lifecycleHooks: {}
+  ## @param cloudflared.extraEnvVars Array with extra environment variables to add to cloudflared containers
+  ##
+  extraEnvVars: []
+  ## @param cloudflared.extraEnvVarsCM Name of existing ConfigMap containing extra env vars for cloudflared containers
+  ##
+  extraEnvVarsCM: ""
+  ## @param cloudflared.extraEnvVarsSecret Name of existing Secret containing extra env vars for cloudflared containers
+  ##
+  extraEnvVarsSecret: ""
+  ## @param cloudflared.extraVolumes Optionally specify extra list of additional volumes for cloudflared pods
+  ##
+  extraVolumes: []
+  ## @param cloudflared.extraVolumeMounts Optionally specify extra list of additional volumeMounts for cloudflared containers
+  ##
+  extraVolumeMounts: []
+  ## @param cloudflared.sidecars Add additional sidecar containers to cloudflared pods
+  ##
+  sidecars: []
+  ## @param cloudflared.initContainers Add additional init containers to cloudflared pods
+  ##
+  initContainers: []
+  ## Pod Disruption Budget configuration
+  ## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+  ## @param cloudflared.pdb.create Enable/disable a Pod Disruption Budget creation
+  ## @param cloudflared.pdb.minAvailable Minimum number/percentage of pods that should remain scheduled
+  ## @param cloudflared.pdb.maxUnavailable Maximum number/percentage of pods that may be made unavailable. Defaults to 1 if both minAvailable and maxUnavailable are empty.
+  ##
+  pdb:
+    create: true
+    minAvailable: ""
+    maxUnavailable: ""
+
+## @section ServiceAccount parameters
+
+## @param serviceAccount.create Specifies whether a ServiceAccount should be created
+## @param serviceAccount.name Name of the service account to use. If not set and create is true, a name is generated using the fullname template.
+## @param serviceAccount.annotations Annotations to add to the service account
+## @param serviceAccount.automountServiceAccountToken Automatically mount a ServiceAccount's API credentials
+##
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+  automountServiceAccountToken: false

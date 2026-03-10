@@ -1,0 +1,185 @@
+{{- /*
+Copyright Cyrus Ho. All Rights Reserved.
+SPDX-License-Identifier: APACHE-2.0
+*/}}
+
+{{- if eq .Values.cloudflared.kind "Deployment" -}}
+apiVersion: {{ include "common.capabilities.deployment.apiVersion" . }}
+kind: Deployment
+metadata:
+  name: {{ template "common.names.fullname" . }}
+  namespace: {{ include "common.names.namespace" . | quote }}
+  labels: {{- include "common.labels.standard" ( dict "customLabels" .Values.commonLabels "context" $ ) | nindent 4 }}
+    app.kubernetes.io/component: cloudflared
+  {{- if or .Values.cloudflared.deploymentAnnotations .Values.commonAnnotations }}
+  {{- $annotations := include "common.tplvalues.merge" (dict "values" (list .Values.cloudflared.deploymentAnnotations .Values.commonAnnotations) "context" .) }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" $annotations "context" $ ) | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.cloudflared.replicaCount }}
+  {{- if .Values.cloudflared.updateStrategy }}
+  strategy: {{- toYaml .Values.cloudflared.updateStrategy | nindent 4 }}
+  {{- end }}
+  {{- $podLabels := include "common.tplvalues.merge" (dict "values" (list .Values.cloudflared.podLabels .Values.commonLabels) "context" .) }}
+  selector:
+    matchLabels: {{- include "common.labels.matchLabels" ( dict "customLabels" $podLabels "context" $ ) | nindent 6 }}
+      app.kubernetes.io/component: cloudflared
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if .Values.cloudflared.podAnnotations }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.cloudflared.podAnnotations "context" $) | nindent 8 }}
+        {{- end }}
+      labels: {{- include "common.labels.standard" ( dict "customLabels" $podLabels "context" $ ) | nindent 8 }}
+        app.kubernetes.io/component: cloudflared
+    spec:
+      {{- include "cloudflared.imagePullSecrets" . | nindent 6 }}
+      serviceAccountName: {{ template "cloudflared.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.cloudflared.automountServiceAccountToken }}
+      {{- if .Values.cloudflared.hostAliases }}
+      hostAliases: {{- include "common.tplvalues.render" (dict "value" .Values.cloudflared.hostAliases "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.cloudflared.affinity }}
+      affinity: {{- include "common.tplvalues.render" ( dict "value" .Values.cloudflared.affinity "context" $) | nindent 8 }}
+      {{- else }}
+      affinity:
+        podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.cloudflared.podAffinityPreset "component" "cloudflared" "customLabels" $podLabels "context" $) | nindent 10 }}
+        podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.cloudflared.podAntiAffinityPreset "component" "cloudflared" "customLabels" $podLabels "context" $) | nindent 10 }}
+        nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.cloudflared.nodeAffinityPreset.type "key" .Values.cloudflared.nodeAffinityPreset.key "values" .Values.cloudflared.nodeAffinityPreset.values) | nindent 10 }}
+      {{- end }}
+      {{- if .Values.cloudflared.nodeSelector }}
+      nodeSelector: {{- include "common.tplvalues.render" ( dict "value" .Values.cloudflared.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.cloudflared.tolerations }}
+      tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.cloudflared.tolerations "context" .) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.cloudflared.priorityClassName }}
+      priorityClassName: {{ .Values.cloudflared.priorityClassName | quote }}
+      {{- end }}
+      {{- if .Values.cloudflared.schedulerName }}
+      schedulerName: {{ .Values.cloudflared.schedulerName | quote }}
+      {{- end }}
+      {{- if .Values.cloudflared.topologySpreadConstraints }}
+      topologySpreadConstraints: {{- include "common.tplvalues.render" (dict "value" .Values.cloudflared.topologySpreadConstraints "context" .) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.cloudflared.podSecurityContext.enabled }}
+      securityContext: {{- omit .Values.cloudflared.podSecurityContext "enabled" | toYaml | nindent 8 }}
+      {{- end }}
+      {{- if .Values.cloudflared.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .Values.cloudflared.terminationGracePeriodSeconds }}
+      {{- end }}
+      {{- if .Values.cloudflared.initContainers }}
+      initContainers: {{- include "common.tplvalues.render" (dict "value" .Values.cloudflared.initContainers "context" $) | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: cloudflared
+          image: {{ template "cloudflared.image" . }}
+          imagePullPolicy: {{ .Values.cloudflared.image.pullPolicy }}
+          {{- if .Values.cloudflared.containerSecurityContext.enabled }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.cloudflared.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.diagnosticMode.enabled }}
+          command: {{- include "common.tplvalues.render" (dict "value" .Values.diagnosticMode.command "context" $) | nindent 12 }}
+          {{- else if .Values.cloudflared.command }}
+          command: {{- include "common.tplvalues.render" (dict "value" .Values.cloudflared.command "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.diagnosticMode.enabled }}
+          args: {{- include "common.tplvalues.render" (dict "value" .Values.diagnosticMode.args "context" $) | nindent 12 }}
+          {{- else if .Values.cloudflared.args }}
+          args: {{- include "common.tplvalues.render" (dict "value" .Values.cloudflared.args "context" $) | nindent 12 }}
+          {{- else }}
+          args:
+            - tunnel
+            - --config
+            - /etc/cloudflared/config/config.yaml
+            - run
+          {{- end }}
+          env:
+            - name: TUNNEL_ORIGIN_CERT
+              value: {{ printf "/etc/cloudflared/creds/%s" (default "cert.pem" .Values.cloudflared.tunnelSecrets.existingPemFileSecret.key) | quote }}
+            {{- if .Values.cloudflared.extraEnvVars }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.cloudflared.extraEnvVars "context" $) | nindent 12 }}
+            {{- end }}
+          {{- if or .Values.cloudflared.extraEnvVarsCM .Values.cloudflared.extraEnvVarsSecret }}
+          envFrom:
+            {{- if .Values.cloudflared.extraEnvVarsCM }}
+            - configMapRef:
+                name: {{ include "common.tplvalues.render" (dict "value" .Values.cloudflared.extraEnvVarsCM "context" $) }}
+            {{- end }}
+            {{- if .Values.cloudflared.extraEnvVarsSecret }}
+            - secretRef:
+                name: {{ include "common.tplvalues.render" (dict "value" .Values.cloudflared.extraEnvVarsSecret "context" $) }}
+            {{- end }}
+          {{- end }}
+          {{- if .Values.cloudflared.resources }}
+          resources: {{- toYaml .Values.cloudflared.resources | nindent 12 }}
+          {{- else if ne .Values.cloudflared.resourcesPreset "none" }}
+          resources: {{- include "common.resources.preset" (dict "type" .Values.cloudflared.resourcesPreset) | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.cloudflared.containerPorts.metrics }}
+              protocol: TCP
+            {{- if .Values.cloudflared.extraContainerPorts }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.cloudflared.extraContainerPorts "context" $) | nindent 12 }}
+            {{- end }}
+          {{- if not .Values.diagnosticMode.enabled }}
+          {{- if .Values.cloudflared.customLivenessProbe }}
+          livenessProbe: {{- include "common.tplvalues.render" (dict "value" .Values.cloudflared.customLivenessProbe "context" $) | nindent 12 }}
+          {{- else if .Values.cloudflared.livenessProbe.enabled }}
+          livenessProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.cloudflared.livenessProbe "enabled") "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.cloudflared.customReadinessProbe }}
+          readinessProbe: {{- include "common.tplvalues.render" (dict "value" .Values.cloudflared.customReadinessProbe "context" $) | nindent 12 }}
+          {{- else if .Values.cloudflared.readinessProbe.enabled }}
+          readinessProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.cloudflared.readinessProbe "enabled") "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.cloudflared.customStartupProbe }}
+          startupProbe: {{- include "common.tplvalues.render" (dict "value" .Values.cloudflared.customStartupProbe "context" $) | nindent 12 }}
+          {{- else if .Values.cloudflared.startupProbe.enabled }}
+          startupProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.cloudflared.startupProbe "enabled") "context" $) | nindent 12 }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.cloudflared.lifecycleHooks }}
+          lifecycle: {{- include "common.tplvalues.render" (dict "value" .Values.cloudflared.lifecycleHooks "context" $) | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/cloudflared/config
+              readOnly: true
+            - name: creds
+              mountPath: /etc/cloudflared/creds
+              readOnly: true
+            {{- if .Values.cloudflared.extraVolumeMounts }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.cloudflared.extraVolumeMounts "context" $) | nindent 12 }}
+            {{- end }}
+        {{- if .Values.cloudflared.sidecars }}
+        {{- include "common.tplvalues.render" ( dict "value" .Values.cloudflared.sidecars "context" $) | nindent 8 }}
+        {{- end }}
+      volumes:
+        - name: creds
+          projected:
+            sources:
+              {{- if include "cloudflared.tunnelCredentialsSecretName" . }}
+              - secret:
+                  name: {{ include "cloudflared.tunnelCredentialsSecretName" . }}
+              {{- end }}
+              {{- if .Values.cloudflared.tunnelSecrets.existingPemFileSecret.name }}
+              - secret:
+                  name: {{ .Values.cloudflared.tunnelSecrets.existingPemFileSecret.name }}
+              {{- end }}
+              {{- if .Values.cloudflared.tunnelSecrets.existingConfigJsonFileSecret.name }}
+              - secret:
+                  name: {{ .Values.cloudflared.tunnelSecrets.existingConfigJsonFileSecret.name }}
+              {{- end }}
+        - name: config
+          configMap:
+            name: {{ include "cloudflared.configmapName" . }}
+            items:
+              - key: config.yaml
+                path: config.yaml
+        {{- if .Values.cloudflared.extraVolumes }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.cloudflared.extraVolumes "context" $) | nindent 8 }}
+        {{- end }}
+{{- end }}

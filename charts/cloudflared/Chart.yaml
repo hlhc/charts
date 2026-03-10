@@ -1,0 +1,32 @@
+# Copyright Cyrus Ho. All Rights Reserved.
+# SPDX-License-Identifier: APACHE-2.0
+
+annotations:
+  category: Infrastructure
+  licenses: Apache-2.0
+apiVersion: v2
+appVersion: "2026.2.0"
+dependencies:
+  - name: common
+    repository: oci://ghcr.io/hlhc/charts
+    version: 2.x.x
+description: A Helm chart for Cloudflare Tunnel (cloudflared)
+home: https://github.com/cloudflare/cloudflared
+icon: https://raw.githubusercontent.com/cloudflare/color/refs/heads/master/static/thinking/logo.png
+keywords:
+  - cloudflared
+  - cloudflare
+  - cloudflare-tunnel
+  - kubernetes
+  - reverse-proxy
+  - tunnel
+  - zero-trust-network-access
+kubeVersion: ">=1.21.0-0"
+maintainers:
+  - name: hlhc
+    url: https://github.com/hlhc/charts
+name: cloudflared
+sources:
+  - https://github.com/hlhc/charts/tree/main/charts/cloudflared
+  - https://github.com/cloudflare/cloudflared
+version: 0.1.0
