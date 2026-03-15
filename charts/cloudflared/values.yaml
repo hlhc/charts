@@ -111,7 +111,7 @@ cloudflared:
   ## @param cloudflared.kind Workload type: DaemonSet (deploy to all nodes) or Deployment
   ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/
   ##
-  kind: DaemonSet
+  kind: Deployment
   ## @param cloudflared.replicaCount Number of cloudflared replicas to deploy (only used when kind=Deployment)
   ##
   replicaCount: 1

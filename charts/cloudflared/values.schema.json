@@ -167,7 +167,7 @@
                 "kind": {
                     "type": "string",
                     "description": "Workload type: DaemonSet (deploy to all nodes) or Deployment",
-                    "default": "DaemonSet"
+                    "default": "Deployment"
                 },
                 "replicaCount": {
                     "type": "number",

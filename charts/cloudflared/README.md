@@ -2,7 +2,7 @@
 
 # cloudflared
 
-A Helm chart for [Cloudflare Tunnel (cloudflared)](https://github.com/cloudflare/cloudflared) — a lightweight daemon that creates outbound-only encrypted tunnels from your Kubernetes cluster to the Cloudflare network, enabling you to expose services without opening inbound firewall ports.
+A Helm chart for [Cloudflare Tunnel (cloudflared)](https://github.com/cloudflare/cloudflared), a lightweight daemon that creates outbound-only encrypted tunnels from your Kubernetes cluster to the Cloudflare network so you can expose services without opening inbound firewall ports.
 
 ## TL;DR
 
@@ -12,18 +12,32 @@ helm install my-release oci://ghcr.io/hlhc/charts/cloudflared
 
 ## Introduction
 
-This chart bootstraps a `cloudflared` [DaemonSet](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/) (or Deployment) on a [Kubernetes](https://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
+This chart bootstraps cloudflared as a Deployment (default) or a [DaemonSet](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/) on a [Kubernetes](https://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
 
 ## Prerequisites
 
 - Kubernetes 1.21+
 - Helm 3.8.0+
 - A [Cloudflare account](https://www.cloudflare.com) with at least one zone
-- A locally-managed Cloudflare Tunnel credential (cert.pem + credentials JSON) — see [Create a tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/local-management/create-local-tunnel/)
+- A locally managed Cloudflare Tunnel credential (`cert.pem` and tunnel credentials JSON). See [Create a local managed tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/local-management/create-local-tunnel/)
 
 ## Installing the Chart
 
-### 1. Create the tunnel credential secret
+To install the chart with the release name my-release:
+
+```console
+helm install my-release oci://REGISTRY_NAME/REPOSITORY_NAME/cloudflared
+```
+
+> Note: You need to substitute the placeholders REGISTRY_NAME and REPOSITORY_NAME with a reference to your Helm chart registry and repository. For example, for this chart use REGISTRY_NAME=ghcr.io and REPOSITORY_NAME=hlhc/charts.
+
+The command deploys cloudflared on the Kubernetes cluster in the default configuration. The [Parameters](#parameters) section lists the parameters that can be configured during installation.
+
+> **Tip**: List all releases using `helm list`
+
+### Tunnel credentials
+
+Create a Secret containing your tunnel certificate and credentials JSON:
 
 ```console
 kubectl create secret generic cloudflared-tunnel \
@@ -31,7 +45,7 @@ kubectl create secret generic cloudflared-tunnel \
   --from-file=credentials.json="${HOME}/.cloudflared/<TUNNEL_ID>.json"
 ```
 
-### 2. Install the chart
+Then install the chart and reference that Secret:
 
 ```console
 helm install my-release oci://ghcr.io/hlhc/charts/cloudflared \
@@ -40,13 +54,7 @@ helm install my-release oci://ghcr.io/hlhc/charts/cloudflared \
   --set cloudflared.tunnelSecrets.existingPemFileSecret.name=cloudflared-tunnel
 ```
 
-> **Tip**: List all releases using `helm list`
-
-### Tunnel credentials
-
-You can supply credentials in two ways:
-
-**Option A — Base64-encoded values (chart creates the Secret)**
+You can also provide base64-encoded values directly (the chart creates the Secret):
 
 ```console
 helm install my-release oci://ghcr.io/hlhc/charts/cloudflared \
@@ -55,20 +63,9 @@ helm install my-release oci://ghcr.io/hlhc/charts/cloudflared \
   --set cloudflared.tunnelSecrets.base64EncodedConfigJsonFile="$(base64 -w0 ~/.cloudflared/*.json)"
 ```
 
-**Option B — Bring your own Secret**
-
-```console
-helm install my-release oci://ghcr.io/hlhc/charts/cloudflared \
-  --set cloudflared.tunnelConfig.name=my-tunnel \
-  --set cloudflared.tunnelSecrets.existingPemFileSecret.name=my-secret \
-  --set cloudflared.tunnelSecrets.existingPemFileSecret.key=cert.pem \
-  --set cloudflared.tunnelSecrets.existingConfigJsonFileSecret.name=my-secret \
-  --set cloudflared.tunnelSecrets.existingConfigJsonFileSecret.key=credentials.json
-```
-
 ### Routing traffic
 
-Define ingress rules via `cloudflared.routes`. The last rule must always be a catch-all:
+Define ingress routing rules with cloudflared.routes. The final rule must be a catch-all.
 
 ```yaml
 cloudflared:
@@ -84,15 +81,16 @@ cloudflared:
 
 ### DaemonSet vs Deployment
 
-By default the chart runs as a `DaemonSet` (one pod per node). Switch to a `Deployment` for a fixed replica count:
+By default, the chart uses a Deployment. If you want one pod per node, switch to DaemonSet:
 
 ```console
 helm install my-release oci://ghcr.io/hlhc/charts/cloudflared \
-  --set cloudflared.kind=Deployment \
-  --set cloudflared.replicaCount=2
+  --set cloudflared.kind=DaemonSet
 ```
 
 ### Additional environment variables
+
+Use cloudflared.extraEnvVars to add extra environment variables:
 
 ```yaml
 cloudflared:
@@ -101,15 +99,11 @@ cloudflared:
       value: debug
 ```
 
-Or reference an existing ConfigMap / Secret:
-
-```yaml
-cloudflared:
-  extraEnvVarsCM: my-configmap
-  extraEnvVarsSecret: my-secret
-```
+You can also reference an existing ConfigMap or Secret using cloudflared.extraEnvVarsCM or cloudflared.extraEnvVarsSecret.
 
 ### Sidecars and init containers
+
+If you need extra containers in the same pod, use cloudflared.sidecars and cloudflared.initContainers:
 
 ```yaml
 cloudflared:
@@ -126,18 +120,11 @@ cloudflared:
       command: ["sh", "-c", "until nslookup cloudflare.com; do sleep 2; done"]
 ```
 
+Learn more about [sidecar containers](https://kubernetes.io/docs/concepts/workloads/pods/) and [init containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/).
+
 ### Pod affinity
 
-```yaml
-cloudflared:
-  podAffinityPreset: ""
-  podAntiAffinityPreset: soft
-  nodeAffinityPreset:
-    type: hard
-    key: kubernetes.io/arch
-    values:
-      - amd64
-```
+This chart allows custom affinity with cloudflared.affinity, or preset affinity settings with cloudflared.podAffinityPreset, cloudflared.podAntiAffinityPreset, and cloudflared.nodeAffinityPreset.
 
 ## Upgrading
 
@@ -190,7 +177,7 @@ helm uninstall my-release
 | `cloudflared.image.pullPolicy`                                  | cloudflared image pull policy                                                                                                                                                                                                                         | `IfNotPresent`           |
 | `cloudflared.image.pullSecrets`                                 | cloudflared image pull secrets                                                                                                                                                                                                                        | `[]`                     |
 | `cloudflared.image.debug`                                       | Enable cloudflared image debug mode                                                                                                                                                                                                                   | `false`                  |
-| `cloudflared.kind`                                              | Workload type: DaemonSet (deploy to all nodes) or Deployment                                                                                                                                                                                          | `DaemonSet`              |
+| `cloudflared.kind`                                              | Workload type: DaemonSet (deploy to all nodes) or Deployment                                                                                                                                                                                          | `Deployment`             |
 | `cloudflared.replicaCount`                                      | Number of cloudflared replicas to deploy (only used when kind=Deployment)                                                                                                                                                                             | `1`                      |
 | `cloudflared.containerPorts.metrics`                            | cloudflared metrics/health container port                                                                                                                                                                                                             | `2000`                   |
 | `cloudflared.extraContainerPorts`                               | Optionally specify extra list of additional ports for cloudflared containers                                                                                                                                                                          | `[]`                     |
@@ -299,19 +286,39 @@ helm uninstall my-release
 | `serviceAccount.annotations`                  | Additional Service Account annotations (evaluated as a template)                                                       | `{}`    |
 | `serviceAccount.automountServiceAccountToken` | Automount ServiceAccount token                                                                                         | `false` |
 
+See <https://github.com/bitnami/readme-generator-for-helm> to regenerate this section from values.yaml and values.schema.json.
+
+Specify each parameter using the --set key=value[,key=value] argument to helm install. For example:
+
+```console
+helm install my-release \
+  --set cloudflared.tunnelConfig.name=my-tunnel \
+  --set cloudflared.tunnelSecrets.existingConfigJsonFileSecret.name=cloudflared-tunnel \
+  --set cloudflared.tunnelSecrets.existingPemFileSecret.name=cloudflared-tunnel \
+  oci://REGISTRY_NAME/REPOSITORY_NAME/cloudflared
+```
+
+> Note: You need to substitute the placeholders REGISTRY_NAME and REPOSITORY_NAME with a reference to your Helm chart registry and repository. For example, for this chart use REGISTRY_NAME=ghcr.io and REPOSITORY_NAME=hlhc/charts.
+
+Alternatively, a YAML file that specifies the values for the parameters can be provided while installing:
+
+```console
+helm install my-release -f values.yaml oci://REGISTRY_NAME/REPOSITORY_NAME/cloudflared
+```
+
 ## Troubleshooting
 
-**Tunnel not connecting**
+### Tunnel not connecting
 
 ```console
 kubectl logs -l app.kubernetes.io/name=cloudflared --tail=100
 ```
 
-Check that `cloudflared.tunnelConfig.name` matches the tunnel name in your credentials JSON, and that the Secret keys are correct.
+Check that cloudflared.tunnelConfig.name matches the tunnel name in your credentials JSON, and verify the Secret keys are correct.
 
-**Metrics endpoint**
+### Metrics endpoint
 
-cloudflared exposes a Prometheus-compatible metrics endpoint on `containerPorts.metrics` (default `2000`):
+cloudflared exposes a Prometheus-compatible metrics endpoint on cloudflared.containerPorts.metrics (default 2000):
 
 ```console
 kubectl port-forward daemonset/my-release-cloudflared 2000:2000
@@ -329,4 +336,5 @@ You may obtain a copy of the License at <http://www.apache.org/licenses/LICENSE-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and limitations under the License.
+See the License for the specific language governing permissions and
+limitations under the License.
