@@ -4,6 +4,13 @@
 
 A Helm chart for [Cloudflare Tunnel (cloudflared)](https://github.com/cloudflare/cloudflared), a lightweight daemon that creates outbound-only encrypted tunnels from your Kubernetes cluster to the Cloudflare network so you can expose services without opening inbound firewall ports.
 
+## Versioning policy
+
+> [!WARNING]
+> All chart versions in the `0.x.x` range are unstable.
+> Breaking changes may happen in any `0.x.x` release, including minor and patch updates.
+> Pin an exact version in production and test upgrades before rollout.
+
 ## TL;DR
 
 ```console
