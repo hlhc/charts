@@ -570,10 +570,8 @@
                 "routes": {
                     "type": "array",
                     "description": "Cloudflare tunnel ingress routing rules",
-                    "default": "[]",
-                    "items": {
-                        "type": "string"
-                    }
+                    "default": [],
+                    "items": {}
                 },
                 "existingConfigmap": {
                     "type": "string",

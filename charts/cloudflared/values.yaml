@@ -314,7 +314,7 @@ cloudflared:
     ##
     warpRouting: false
 
-  ## @param cloudflared.routes [array] Cloudflare tunnel ingress routing rules
+  ## @param cloudflared.routes Cloudflare tunnel ingress routing rules
   ## ref: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/configure-tunnels/local-management/configuration-file/#how-traffic-is-matched
   ## e.g:
   ## routes:
