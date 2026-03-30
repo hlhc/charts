@@ -1,0 +1,236 @@
+{{- /*
+Copyright Cyrus Ho. All Rights Reserved.
+SPDX-License-Identifier: APACHE-2.0
+*/}}
+
+apiVersion: {{ include "common.capabilities.statefulset.apiVersion" . }}
+kind: StatefulSet
+metadata:
+  name: {{ template "common.names.fullname" . }}
+  namespace: {{ include "common.names.namespace" . | quote }}
+  labels: {{- include "common.labels.standard" ( dict "customLabels" .Values.commonLabels "context" $ ) | nindent 4 }}
+    app.kubernetes.io/component: headscale
+  {{- if or .Values.headscale.statefulsetAnnotations .Values.commonAnnotations }}
+  {{- $annotations := include "common.tplvalues.merge" (dict "values" (list .Values.headscale.statefulsetAnnotations .Values.commonAnnotations) "context" .) }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" $annotations "context" $ ) | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if not .Values.headscale.autoscaling.hpa.enabled }}
+  replicas: {{ .Values.headscale.replicaCount }}
+  {{- end }}
+  podManagementPolicy: {{ .Values.headscale.podManagementPolicy | quote }}
+  {{- $podLabels := include "common.tplvalues.merge" (dict "values" (list .Values.headscale.podLabels .Values.commonLabels) "context" .) }}
+  selector:
+    matchLabels: {{- include "common.labels.matchLabels" ( dict "customLabels" $podLabels "context" $ ) | nindent 6 }}
+      app.kubernetes.io/component: headscale
+  serviceName: {{ template "common.names.fullname" . }}
+  {{- if .Values.headscale.updateStrategy }}
+  updateStrategy: {{- toYaml .Values.headscale.updateStrategy | nindent 4 }}
+  {{- end }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- if .Values.headscale.podAnnotations }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.headscale.podAnnotations "context" $) | nindent 8 }}
+        {{- end }}
+      labels: {{- include "common.labels.standard" ( dict "customLabels" $podLabels "context" $ ) | nindent 8 }}
+        app.kubernetes.io/component: headscale
+    spec:
+      {{- include "headscale.imagePullSecrets" . | nindent 6 }}
+      serviceAccountName: {{ template "headscale.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.headscale.automountServiceAccountToken }}
+      {{- if .Values.headscale.hostAliases }}
+      hostAliases: {{- include "common.tplvalues.render" (dict "value" .Values.headscale.hostAliases "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.headscale.affinity }}
+      affinity: {{- include "common.tplvalues.render" ( dict "value" .Values.headscale.affinity "context" $) | nindent 8 }}
+      {{- else }}
+      affinity:
+        podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.headscale.podAffinityPreset "component" "headscale" "customLabels" $podLabels "context" $) | nindent 10 }}
+        podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.headscale.podAntiAffinityPreset "component" "headscale" "customLabels" $podLabels "context" $) | nindent 10 }}
+        nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.headscale.nodeAffinityPreset.type "key" .Values.headscale.nodeAffinityPreset.key "values" .Values.headscale.nodeAffinityPreset.values) | nindent 10 }}
+      {{- end }}
+      {{- if .Values.headscale.nodeSelector }}
+      nodeSelector: {{- include "common.tplvalues.render" ( dict "value" .Values.headscale.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.headscale.tolerations }}
+      tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.headscale.tolerations "context" .) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.headscale.priorityClassName }}
+      priorityClassName: {{ .Values.headscale.priorityClassName | quote }}
+      {{- end }}
+      {{- if .Values.headscale.schedulerName }}
+      schedulerName: {{ .Values.headscale.schedulerName | quote }}
+      {{- end }}
+      {{- if .Values.headscale.topologySpreadConstraints }}
+      topologySpreadConstraints: {{- include "common.tplvalues.render" (dict "value" .Values.headscale.topologySpreadConstraints "context" .) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.headscale.podSecurityContext.enabled }}
+      securityContext: {{- omit .Values.headscale.podSecurityContext "enabled" | toYaml | nindent 8 }}
+      {{- end }}
+      {{- if .Values.headscale.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .Values.headscale.terminationGracePeriodSeconds }}
+      {{- end }}
+      initContainers:
+        {{- if and .Values.defaultInitContainers.volumePermissions.enabled .Values.persistence.enabled }}
+        {{- include "headscale.defaultInitContainers.volumePermissions" (dict "context" . "component" "headscale") | nindent 8 }}
+        {{- end }}
+        {{- if .Values.headscale.initContainers }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.headscale.initContainers "context" $) | nindent 8 }}
+        {{- end }}
+      containers:
+        - name: headscale
+          image: {{ template "headscale.image" . }}
+          imagePullPolicy: {{ .Values.headscale.image.pullPolicy }}
+          {{- if .Values.headscale.containerSecurityContext.enabled }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.headscale.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.diagnosticMode.enabled }}
+          command: {{- include "common.tplvalues.render" (dict "value" .Values.diagnosticMode.command "context" $) | nindent 12 }}
+          {{- else if .Values.headscale.command }}
+          command: {{- include "common.tplvalues.render" (dict "value" .Values.headscale.command "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.diagnosticMode.enabled }}
+          args: {{- include "common.tplvalues.render" (dict "value" .Values.diagnosticMode.args "context" $) | nindent 12 }}
+          {{- else if .Values.headscale.args }}
+          args: {{- include "common.tplvalues.render" (dict "value" .Values.headscale.args "context" $) | nindent 12 }}
+          {{- else }}
+          args:
+            - serve
+          {{- end }}
+          env:
+            {{- if and .Values.headscale.oidc.enabled (or .Values.headscale.oidc.clientSecret .Values.headscale.oidc.existingSecret) }}
+            - name: HEADSCALE_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "headscale.oidcSecretName" . }}
+                  key: {{ .Values.headscale.oidc.existingSecretKey }}
+            {{- end }}
+            {{- if .Values.headscale.extraEnvVars }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.headscale.extraEnvVars "context" $) | nindent 12 }}
+            {{- end }}
+          {{- if or .Values.headscale.extraEnvVarsCM .Values.headscale.extraEnvVarsSecret }}
+          envFrom:
+            {{- if .Values.headscale.extraEnvVarsCM }}
+            - configMapRef:
+                name: {{ include "common.tplvalues.render" (dict "value" .Values.headscale.extraEnvVarsCM "context" $) }}
+            {{- end }}
+            {{- if .Values.headscale.extraEnvVarsSecret }}
+            - secretRef:
+                name: {{ include "common.tplvalues.render" (dict "value" .Values.headscale.extraEnvVarsSecret "context" $) }}
+            {{- end }}
+          {{- end }}
+          {{- if .Values.headscale.resources }}
+          resources: {{- toYaml .Values.headscale.resources | nindent 12 }}
+          {{- else if ne .Values.headscale.resourcesPreset "none" }}
+          resources: {{- include "common.resources.preset" (dict "type" .Values.headscale.resourcesPreset) | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.headscale.containerPorts.http }}
+              protocol: TCP
+            - name: grpc
+              containerPort: {{ .Values.headscale.containerPorts.grpc }}
+              protocol: TCP
+            {{- if .Values.metrics.enabled }}
+            - name: tcp-metrics
+              containerPort: {{ .Values.headscale.containerPorts.metrics }}
+              protocol: TCP
+            {{- end }}
+            {{- if .Values.headscale.extraContainerPorts }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.headscale.extraContainerPorts "context" $) | nindent 12 }}
+            {{- end }}
+          {{- if not .Values.diagnosticMode.enabled }}
+          {{- if .Values.headscale.customLivenessProbe }}
+          livenessProbe: {{- include "common.tplvalues.render" (dict "value" .Values.headscale.customLivenessProbe "context" $) | nindent 12 }}
+          {{- else if .Values.headscale.livenessProbe.enabled }}
+          livenessProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.headscale.livenessProbe "enabled") "context" $) | nindent 12 }}
+            httpGet:
+              path: /health
+              port: http
+          {{- end }}
+          {{- if .Values.headscale.customReadinessProbe }}
+          readinessProbe: {{- include "common.tplvalues.render" (dict "value" .Values.headscale.customReadinessProbe "context" $) | nindent 12 }}
+          {{- else if .Values.headscale.readinessProbe.enabled }}
+          readinessProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.headscale.readinessProbe "enabled") "context" $) | nindent 12 }}
+            httpGet:
+              path: /health
+              port: http
+          {{- end }}
+          {{- if .Values.headscale.customStartupProbe }}
+          startupProbe: {{- include "common.tplvalues.render" (dict "value" .Values.headscale.customStartupProbe "context" $) | nindent 12 }}
+          {{- else if .Values.headscale.startupProbe.enabled }}
+          startupProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.headscale.startupProbe "enabled") "context" $) | nindent 12 }}
+            httpGet:
+              path: /health
+              port: http
+          {{- end }}
+          {{- end }}
+          {{- if .Values.headscale.lifecycleHooks }}
+          lifecycle: {{- include "common.tplvalues.render" (dict "value" .Values.headscale.lifecycleHooks "context" $) | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/headscale
+              readOnly: true
+            - name: data
+              mountPath: {{ .Values.persistence.mountPath }}
+              {{- if .Values.persistence.subPath }}
+              subPath: {{ .Values.persistence.subPath }}
+              {{- end }}
+            - name: empty-dir
+              mountPath: /tmp
+              subPath: tmp-dir
+            {{- if .Values.headscale.extraVolumeMounts }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.headscale.extraVolumeMounts "context" $) | nindent 12 }}
+            {{- end }}
+        {{- if .Values.headscale.sidecars }}
+        {{- include "common.tplvalues.render" ( dict "value" .Values.headscale.sidecars "context" $) | nindent 8 }}
+        {{- end }}
+      volumes:
+        - name: empty-dir
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: {{ include "headscale.configmapName" . }}
+        {{- if not .Values.persistence.enabled }}
+        - name: data
+          emptyDir: {}
+        {{- end }}
+        {{- if and .Values.persistence.enabled .Values.persistence.existingClaim }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingClaim }}
+        {{- end }}
+        {{- if .Values.headscale.extraVolumes }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.headscale.extraVolumes "context" $) | nindent 8 }}
+        {{- end }}
+  {{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        {{- if or .Values.persistence.annotations .Values.commonAnnotations }}
+        {{- $claimAnnotations := include "common.tplvalues.merge" (dict "values" (list .Values.persistence.annotations .Values.commonAnnotations) "context" .) | fromYaml }}
+        annotations: {{- include "common.tplvalues.render" ( dict "value" $claimAnnotations "context" $ ) | nindent 10 }}
+        {{- end }}
+        {{- if .Values.commonLabels }}
+        labels: {{- include "common.labels.matchLabels" ( dict "customLabels" .Values.commonLabels "context" $ ) | nindent 10 }}
+        {{- end }}
+      spec:
+        accessModes:
+        {{- range .Values.persistence.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size | quote }}
+        {{- if .Values.persistence.dataSource }}
+        dataSource: {{- include "common.tplvalues.render" (dict "value" .Values.persistence.dataSource "context" $) | nindent 10 }}
+        {{- end }}
+        {{- if .Values.persistence.selector }}
+        selector: {{- include "common.tplvalues.render" (dict "value" .Values.persistence.selector "context" $) | nindent 10 }}
+        {{- end }}
+        {{- include "common.storage.class" (dict "persistence" .Values.persistence "global" .Values.global) | nindent 8 }}
+  {{- end }}

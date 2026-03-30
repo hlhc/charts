@@ -6,6 +6,11 @@ Helm charts maintained by @hlhc.
 
 Charts are published from the `charts/` directory in this repository.
 
+| Chart | Description |
+| ----- | ----------- |
+| [cloudflared](charts/cloudflared/) | Lightweight daemon that creates outbound-only encrypted tunnels from your cluster to the Cloudflare network |
+| [headscale](charts/headscale/) | Open source, self-hosted implementation of the Tailscale control server |
+
 ## TL;DR
 
 ```console

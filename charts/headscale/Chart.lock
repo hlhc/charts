@@ -1,0 +1,6 @@
+dependencies:
+- name: common
+  repository: oci://ghcr.io/hlhc/charts
+  version: 2.31.9
+digest: sha256:c661d3bc373b3a5c6796d404899ba08753c09d50f2ef65319176bd10f5665a55
+generated: "2026-03-31T04:09:44.543145+08:00"

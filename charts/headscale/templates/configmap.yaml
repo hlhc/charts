@@ -1,0 +1,83 @@
+{{- /*
+Copyright Cyrus Ho. All Rights Reserved.
+SPDX-License-Identifier: APACHE-2.0
+*/}}
+
+{{- if not .Values.headscale.existingConfigmap -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "common.names.fullname" . }}
+  namespace: {{ include "common.names.namespace" . | quote }}
+  labels: {{- include "common.labels.standard" ( dict "customLabels" .Values.commonLabels "context" $ ) | nindent 4 }}
+    app.kubernetes.io/component: headscale
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+data:
+  config.yaml: |
+    server_url: {{ .Values.headscale.config.serverUrl | quote }}
+    listen_addr: {{ .Values.headscale.config.listenAddr | quote }}
+    metrics_listen_addr: {{ .Values.headscale.config.metricsListenAddr | quote }}
+    grpc_listen_addr: {{ .Values.headscale.config.grpcListenAddr | quote }}
+    grpc_allow_insecure: {{ .Values.headscale.config.grpcAllowInsecure }}
+    randomize_client_port: {{ .Values.headscale.config.randomizeClientPort }}
+
+    noise:
+      private_key_path: {{ .Values.headscale.config.noise.privateKeyPath | quote }}
+
+    prefixes:
+      v4: {{ .Values.headscale.config.prefixes.v4 | quote }}
+      v6: {{ .Values.headscale.config.prefixes.v6 | quote }}
+      allocation: {{ .Values.headscale.config.prefixes.allocation | quote }}
+
+    derp:
+      server:
+        enabled: {{ .Values.headscale.config.derp.server.enabled }}
+        region_id: {{ .Values.headscale.config.derp.server.regionId }}
+        region_code: {{ .Values.headscale.config.derp.server.regionCode | quote }}
+        region_name: {{ .Values.headscale.config.derp.server.regionName | quote }}
+        stun_listen_addr: {{ .Values.headscale.config.derp.server.stunListenAddr | quote }}
+        private_key_path: {{ .Values.headscale.config.derp.server.privateKeyPath | quote }}
+        automatically_add_embedded_derp_region: {{ .Values.headscale.config.derp.server.automaticallyAddEmbeddedDerpRegion }}
+        {{- if .Values.headscale.config.derp.server.ipv4 }}
+        ipv4: {{ .Values.headscale.config.derp.server.ipv4 | quote }}
+        {{- end }}
+        {{- if .Values.headscale.config.derp.server.ipv6 }}
+        ipv6: {{ .Values.headscale.config.derp.server.ipv6 | quote }}
+        {{- end }}
+      urls: {{ toYaml .Values.headscale.config.derp.urls | nindent 8 }}
+      paths: {{ toYaml .Values.headscale.config.derp.paths | nindent 8 }}
+      auto_update: {{ .Values.headscale.config.derp.autoUpdate }}
+      update_frequency: {{ .Values.headscale.config.derp.updateFrequency | quote }}
+
+    database:
+      type: {{ .Values.headscale.config.database.type | quote }}
+      debug: {{ .Values.headscale.config.database.debug }}
+      sqlite:
+        path: {{ .Values.headscale.config.database.sqlite.path | quote }}
+
+    policy:
+      mode: {{ .Values.headscale.config.policy.mode | quote }}
+      path: {{ .Values.headscale.config.policy.path | quote }}
+
+    dns:
+      magic_dns: {{ .Values.headscale.config.dns.magicDns }}
+      base_domain: {{ .Values.headscale.config.dns.baseDomain | quote }}
+      nameservers:
+        global: {{ toYaml .Values.headscale.config.dns.nameservers.global | nindent 10 }}
+
+    log:
+      level: {{ .Values.headscale.config.log.level | quote }}
+      format: {{ .Values.headscale.config.log.format | quote }}
+
+    {{- if .Values.headscale.oidc.enabled }}
+    oidc:
+      issuer: {{ .Values.headscale.oidc.issuer | quote }}
+      client_id: {{ .Values.headscale.oidc.clientId | quote }}
+      scope: {{ toYaml .Values.headscale.oidc.scope | nindent 8 }}
+      pkce:
+        enabled: {{ .Values.headscale.oidc.pkce.enabled }}
+        method: {{ .Values.headscale.oidc.pkce.method | quote }}
+    {{- end }}
+{{- end }}

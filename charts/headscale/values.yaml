@@ -1,0 +1,823 @@
+# Copyright Cyrus Ho. All Rights Reserved.
+# SPDX-License-Identifier: APACHE-2.0
+
+## @section Global parameters
+
+global:
+  ## @param global.imageRegistry Global Docker Image registry
+  ## @param global.imagePullSecrets Global Docker registry secret names as an array
+  ##
+  imageRegistry: ""
+  imagePullSecrets: []
+  ## @param global.defaultStorageClass Global default StorageClass for Persistent Volume(s)
+  ##
+  defaultStorageClass: ""
+  ## @param global.security.allowInsecureImages Allows skipping image verification
+  ##
+  security:
+    allowInsecureImages: false
+  ## @param global.compatibility.openshift.adaptSecurityContext Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC
+  ##
+  compatibility:
+    openshift:
+      adaptSecurityContext: auto
+    ## @param global.compatibility.omitEmptySeLinuxOptions If set to true, removes the seLinuxOptions from the securityContexts when it is set to an empty object
+    omitEmptySeLinuxOptions: false
+
+## @section Common parameters
+
+## @param kubeVersion Override Kubernetes version reported by .Capabilities
+##
+kubeVersion: ""
+## @param apiVersions Override Kubernetes API versions reported by .Capabilities
+##
+apiVersions: []
+## @param nameOverride String to partially override common.names.name
+##
+nameOverride: ""
+## @param fullnameOverride String to fully override common.names.fullname
+##
+fullnameOverride: ""
+## @param namespaceOverride String to fully override common.names.namespace
+##
+namespaceOverride: ""
+## @param commonLabels Labels to add to all deployed objects
+##
+commonLabels: {}
+## @param commonAnnotations Annotations to add to all deployed objects
+##
+commonAnnotations: {}
+## @param clusterDomain Kubernetes cluster domain name
+##
+clusterDomain: cluster.local
+## @param extraDeploy Array of extra objects to deploy with the release
+##
+extraDeploy: []
+## @param diagnosticMode.enabled Enable diagnostic mode (all probes disabled, command overridden)
+## @param diagnosticMode.command Command to override all containers in the chart release
+## @param diagnosticMode.args Args to override all containers in the chart release
+##
+diagnosticMode:
+  enabled: false
+  command:
+    - sleep
+  args:
+    - infinity
+
+## @section Headscale Parameters
+##
+
+## Headscale server
+##
+headscale:
+  ## Headscale image
+  ## ref: https://github.com/juanfont/headscale/pkgs/container/headscale
+  ## @param headscale.image.registry [default: ghcr.io] headscale image registry
+  ## @param headscale.image.repository [default: juanfont/headscale] headscale image repository
+  ## @skip headscale.image.tag headscale image tag (immutable tags are recommended)
+  ## @param headscale.image.digest headscale image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag
+  ## @param headscale.image.pullPolicy headscale image pull policy
+  ## @param headscale.image.pullSecrets headscale image pull secrets
+  ## @param headscale.image.debug Enable headscale image debug mode
+  ##
+  image:
+    registry: ghcr.io
+    repository: juanfont/headscale
+    tag: ""
+    digest: ""
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+    debug: false
+  ## @param headscale.replicaCount Number of headscale replicas to deploy
+  ##
+  replicaCount: 1
+  ## @param headscale.containerPorts.http headscale HTTP container port
+  ## @param headscale.containerPorts.grpc headscale gRPC container port
+  ## @param headscale.containerPorts.metrics headscale metrics container port
+  ##
+  containerPorts:
+    http: 8080
+    grpc: 50443
+    metrics: 9090
+  ## @param headscale.extraContainerPorts Optionally specify extra list of additional ports for headscale containers
+  ##
+  extraContainerPorts: []
+  ## Configure extra options for headscale containers' liveness and readiness probes
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/#configure-probes
+  ## @param headscale.livenessProbe.enabled Enable livenessProbe on headscale containers
+  ## @param headscale.livenessProbe.initialDelaySeconds Initial delay seconds for livenessProbe
+  ## @param headscale.livenessProbe.periodSeconds Period seconds for livenessProbe
+  ## @param headscale.livenessProbe.timeoutSeconds Timeout seconds for livenessProbe
+  ## @param headscale.livenessProbe.failureThreshold Failure threshold for livenessProbe
+  ## @param headscale.livenessProbe.successThreshold Success threshold for livenessProbe
+  ##
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+  ## @param headscale.readinessProbe.enabled Enable readinessProbe on headscale containers
+  ## @param headscale.readinessProbe.initialDelaySeconds Initial delay seconds for readinessProbe
+  ## @param headscale.readinessProbe.periodSeconds Period seconds for readinessProbe
+  ## @param headscale.readinessProbe.timeoutSeconds Timeout seconds for readinessProbe
+  ## @param headscale.readinessProbe.failureThreshold Failure threshold for readinessProbe
+  ## @param headscale.readinessProbe.successThreshold Success threshold for readinessProbe
+  ##
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+  ## @param headscale.startupProbe.enabled Enable startupProbe on headscale containers
+  ## @param headscale.startupProbe.initialDelaySeconds Initial delay seconds for startupProbe
+  ## @param headscale.startupProbe.periodSeconds Period seconds for startupProbe
+  ## @param headscale.startupProbe.timeoutSeconds Timeout seconds for startupProbe
+  ## @param headscale.startupProbe.failureThreshold Failure threshold for startupProbe
+  ## @param headscale.startupProbe.successThreshold Success threshold for startupProbe
+  ##
+  startupProbe:
+    enabled: false
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 10
+    successThreshold: 1
+  ## @param headscale.customLivenessProbe Custom livenessProbe that overrides the default one
+  ##
+  customLivenessProbe: {}
+  ## @param headscale.customReadinessProbe Custom readinessProbe that overrides the default one
+  ##
+  customReadinessProbe: {}
+  ## @param headscale.customStartupProbe Custom startupProbe that overrides the default one
+  ##
+  customStartupProbe: {}
+  ## headscale resource requests and limits
+  ## ref: http://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
+  ## @param headscale.resourcesPreset Set headscale container resources according to one common preset (allowed values: none, nano, micro, small, medium, large, xlarge, 2xlarge). This is ignored if headscale.resources is set (headscale.resources is recommended for production).
+  ##
+  resourcesPreset: "small"
+  ## @param headscale.resources Set headscale container requests and limits for different resources like CPU or memory (essential for production workloads)
+  ##
+  resources: {}
+  ## Configure Pods Security Context
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
+  ## @param headscale.podSecurityContext.enabled Enable headscale pods' Security Context
+  ## @param headscale.podSecurityContext.fsGroupChangePolicy Set filesystem group change policy for headscale pods
+  ## @param headscale.podSecurityContext.sysctls Set kernel settings using the sysctl interface for headscale pods
+  ## @param headscale.podSecurityContext.supplementalGroups Set filesystem extra groups for headscale pods
+  ## @param headscale.podSecurityContext.fsGroup Set fsGroup in headscale pods' Security Context
+  ##
+  podSecurityContext:
+    enabled: true
+    fsGroupChangePolicy: Always
+    sysctls: []
+    supplementalGroups: []
+    fsGroup: 65532
+  ## Configure Container Security Context
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container
+  ## @param headscale.containerSecurityContext.enabled Enabled headscale container' Security Context
+  ## @param headscale.containerSecurityContext.seLinuxOptions [object,nullable] Set SELinux options in headscale container
+  ## @param headscale.containerSecurityContext.runAsUser Set runAsUser in headscale container' Security Context
+  ## @param headscale.containerSecurityContext.runAsGroup Set runAsGroup in headscale container' Security Context
+  ## @param headscale.containerSecurityContext.runAsNonRoot Set runAsNonRoot in headscale container' Security Context
+  ## @param headscale.containerSecurityContext.readOnlyRootFilesystem Set readOnlyRootFilesystem in headscale container' Security Context
+  ## @param headscale.containerSecurityContext.privileged Set privileged in headscale container' Security Context
+  ## @param headscale.containerSecurityContext.allowPrivilegeEscalation Set allowPrivilegeEscalation in headscale container' Security Context
+  ## @param headscale.containerSecurityContext.capabilities.drop List of capabilities to be dropped in headscale container
+  ## @param headscale.containerSecurityContext.seccompProfile.type Set seccomp profile in headscale container
+  ##
+  containerSecurityContext:
+    enabled: true
+    seLinuxOptions: {}
+    runAsUser: 65532
+    runAsGroup: 65532
+    runAsNonRoot: true
+    readOnlyRootFilesystem: true
+    privileged: false
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+    seccompProfile:
+      type: "RuntimeDefault"
+
+  ## Headscale server configuration
+  ## ref: https://headscale.net/ref/configuration/
+  ##
+  config:
+    ## @param headscale.config.serverUrl Public URL for the headscale server (required)
+    ##
+    serverUrl: "https://headscale.example.com"
+    ## @param headscale.config.listenAddr Address headscale listens on
+    ##
+    listenAddr: "0.0.0.0:8080"
+    ## @param headscale.config.metricsListenAddr Address headscale listens on for Prometheus metrics
+    ##
+    metricsListenAddr: "0.0.0.0:9090"
+    ## @param headscale.config.grpcListenAddr Address headscale listens on for gRPC
+    ##
+    grpcListenAddr: "0.0.0.0:50443"
+    ## @param headscale.config.grpcAllowInsecure Allow insecure gRPC connections
+    ##
+    grpcAllowInsecure: false
+    ## @param headscale.config.randomizeClientPort Enable randomizing client ports
+    ##
+    randomizeClientPort: false
+    ## Policy configuration
+    ##
+    policy:
+      ## @param headscale.config.policy.mode Policy mode: 'file' or 'database'
+      ##
+      mode: database
+      ## @param headscale.config.policy.path Path to the ACL policy file (used when mode is 'file')
+      ##
+      path: "/etc/headscale/acl.hujson"
+    ## IP prefix configuration
+    ##
+    prefixes:
+      ## @param headscale.config.prefixes.v4 IPv4 prefix for Tailscale nodes
+      ##
+      v4: "100.64.0.0/10"
+      ## @param headscale.config.prefixes.v6 IPv6 prefix for Tailscale nodes
+      ##
+      v6: "fd7a:115c:a1e0::/48"
+      ## @param headscale.config.prefixes.allocation IP allocation mode: 'sequential' or 'random'
+      ##
+      allocation: sequential
+    ## Database configuration
+    ##
+    database:
+      ## @param headscale.config.database.type Database type: 'sqlite' or 'postgres'
+      ##
+      type: sqlite
+      ## @param headscale.config.database.debug Enable database debug logging
+      ##
+      debug: false
+      sqlite:
+        ## @param headscale.config.database.sqlite.path Path to the SQLite database file
+        ##
+        path: /var/lib/headscale/db.sqlite
+    ## Noise protocol configuration
+    ##
+    noise:
+      ## @param headscale.config.noise.privateKeyPath Path to the Noise protocol private key
+      ##
+      privateKeyPath: /var/lib/headscale/noise_private.key
+    ## DERP configuration
+    ##
+    derp:
+      server:
+        ## @param headscale.config.derp.server.enabled Enable the embedded DERP server
+        ##
+        enabled: false
+        ## @param headscale.config.derp.server.regionId DERP region ID for the embedded server
+        ##
+        regionId: 999
+        ## @param headscale.config.derp.server.regionCode DERP region code for the embedded server
+        ##
+        regionCode: "headscale"
+        ## @param headscale.config.derp.server.regionName DERP region name for the embedded server
+        ##
+        regionName: "Headscale Embedded DERP"
+        ## @param headscale.config.derp.server.stunListenAddr STUN listen address for the embedded DERP server
+        ##
+        stunListenAddr: "0.0.0.0:3478"
+        ## @param headscale.config.derp.server.privateKeyPath Path to the DERP server private key
+        ##
+        privateKeyPath: /var/lib/headscale/derp_server_private.key
+        ## @param headscale.config.derp.server.automaticallyAddEmbeddedDerpRegion Automatically add the embedded DERP region to the DERP map
+        ##
+        automaticallyAddEmbeddedDerpRegion: true
+        ## @param headscale.config.derp.server.ipv4 IPv4 address of the embedded DERP server (required if enabled)
+        ##
+        ipv4: ""
+        ## @param headscale.config.derp.server.ipv6 IPv6 address of the embedded DERP server
+        ##
+        ipv6: ""
+      ## @param headscale.config.derp.urls List of DERP map URLs
+      ##
+      urls:
+        - https://controlplane.tailscale.com/derpmap/default
+      ## @param headscale.config.derp.paths List of local DERP map files
+      ##
+      paths: []
+      ## @param headscale.config.derp.autoUpdate Enable automatic DERP map updates
+      ##
+      autoUpdate: true
+      ## @param headscale.config.derp.updateFrequency Frequency to check for DERP map updates
+      ##
+      updateFrequency: 24h
+    ## DNS configuration
+    ##
+    dns:
+      ## @param headscale.config.dns.magicDns Enable MagicDNS
+      ##
+      magicDns: true
+      ## @param headscale.config.dns.baseDomain Base domain for MagicDNS
+      ##
+      baseDomain: headscale.vpn
+      nameservers:
+        ## @param headscale.config.dns.nameservers.global Global DNS nameservers
+        ##
+        global:
+          - 1.1.1.1
+          - 8.8.8.8
+    ## Log configuration
+    ##
+    log:
+      ## @param headscale.config.log.level Log level (trace, debug, info, warn, error)
+      ##
+      level: info
+      ## @param headscale.config.log.format Log format (text or json)
+      ##
+      format: text
+
+  ## OIDC configuration
+  ## ref: https://headscale.net/ref/oidc/
+  ##
+  oidc:
+    ## @param headscale.oidc.enabled Enable OIDC authentication
+    ##
+    enabled: false
+    ## @param headscale.oidc.issuer OIDC issuer URL
+    ##
+    issuer: ""
+    ## @param headscale.oidc.clientId OIDC client ID
+    ##
+    clientId: ""
+    ## @param headscale.oidc.clientSecret OIDC client secret (stored in a managed Secret). Ignored if existingSecret is set.
+    ##
+    clientSecret: ""
+    ## @param headscale.oidc.existingSecret Name of an existing secret containing the OIDC client secret
+    ##
+    existingSecret: ""
+    ## @param headscale.oidc.existingSecretKey Key in the existing secret containing the OIDC client secret
+    ##
+    existingSecretKey: "client_secret"
+    ## @param headscale.oidc.scope OIDC scopes to request
+    ##
+    scope:
+      - openid
+      - profile
+      - email
+    pkce:
+      ## @param headscale.oidc.pkce.enabled Enable PKCE
+      ##
+      enabled: false
+      ## @param headscale.oidc.pkce.method PKCE method (S256)
+      ##
+      method: S256
+
+  ## @param headscale.existingConfigmap Name of an existing ConfigMap with the headscale config. If set, the managed configmap.yaml is skipped.
+  ##
+  existingConfigmap: ""
+  ## @param headscale.command Override default headscale container command (useful when using custom images)
+  ##
+  command: []
+  ## @param headscale.args Override default headscale container args (useful when using custom images)
+  ##
+  args: []
+  ## @param headscale.automountServiceAccountToken Mount Service Account token in headscale pods
+  ##
+  automountServiceAccountToken: false
+  ## @param headscale.hostAliases headscale pods host aliases
+  ##
+  hostAliases: []
+  ## @param headscale.statefulsetAnnotations Annotations for headscale StatefulSet
+  ##
+  statefulsetAnnotations: {}
+  ## @param headscale.podLabels Extra labels for headscale pods
+  ##
+  podLabels: {}
+  ## @param headscale.podAnnotations Annotations for headscale pods
+  ##
+  podAnnotations: {}
+  ## @param headscale.podAffinityPreset Pod affinity preset. Ignored if `headscale.affinity` is set. Allowed values: `soft` or `hard`
+  ##
+  podAffinityPreset: ""
+  ## @param headscale.podAntiAffinityPreset Pod anti-affinity preset. Ignored if `headscale.affinity` is set. Allowed values: `soft` or `hard`
+  ##
+  podAntiAffinityPreset: soft
+  ## Node affinity preset
+  ##
+  nodeAffinityPreset:
+    ## @param headscale.nodeAffinityPreset.type Node affinity preset type. Ignored if `headscale.affinity` is set. Allowed values: `soft` or `hard`
+    ##
+    type: ""
+    ## @param headscale.nodeAffinityPreset.key Node label key to match. Ignored if `headscale.affinity` is set
+    ##
+    key: ""
+    ## @param headscale.nodeAffinityPreset.values Node label values to match. Ignored if `headscale.affinity` is set
+    ##
+    values: []
+  ## @param headscale.affinity Affinity for headscale pods assignment
+  ##
+  affinity: {}
+  ## @param headscale.nodeSelector Node labels for headscale pods assignment
+  ##
+  nodeSelector: {}
+  ## @param headscale.tolerations Tolerations for headscale pods assignment
+  ##
+  tolerations: []
+  ## @param headscale.updateStrategy.type headscale statefulset strategy type
+  ##
+  updateStrategy:
+    type: RollingUpdate
+  ## @param headscale.podManagementPolicy Pod management policy for headscale statefulset
+  ##
+  podManagementPolicy: OrderedReady
+  ## @param headscale.priorityClassName headscale pods' priorityClassName
+  ##
+  priorityClassName: ""
+  ## @param headscale.topologySpreadConstraints Topology Spread Constraints for headscale pod assignment
+  ##
+  topologySpreadConstraints: []
+  ## @param headscale.schedulerName Name of the k8s scheduler (other than default) for headscale pods
+  ##
+  schedulerName: ""
+  ## @param headscale.terminationGracePeriodSeconds Seconds headscale pods need to terminate gracefully
+  ##
+  terminationGracePeriodSeconds: 30
+  ## @param headscale.lifecycleHooks for headscale containers to automate configuration before or after startup
+  ##
+  lifecycleHooks: {}
+  ## @param headscale.extraEnvVars Array with extra environment variables to add to headscale containers
+  ##
+  extraEnvVars: []
+  ## @param headscale.extraEnvVarsCM Name of existing ConfigMap containing extra env vars for headscale containers
+  ##
+  extraEnvVarsCM: ""
+  ## @param headscale.extraEnvVarsSecret Name of existing Secret containing extra env vars for headscale containers
+  ##
+  extraEnvVarsSecret: ""
+  ## @param headscale.extraVolumes Optionally specify extra list of additional volumes for the headscale pods
+  ##
+  extraVolumes: []
+  ## @param headscale.extraVolumeMounts Optionally specify extra list of additional volumeMounts for the headscale containers
+  ##
+  extraVolumeMounts: []
+  ## @param headscale.sidecars Add additional sidecar containers to the headscale pods
+  ##
+  sidecars: []
+  ## @param headscale.initContainers Add additional init containers to the headscale pods
+  ##
+  initContainers: []
+  ## Pod Disruption Budget configuration
+  ## @param headscale.pdb.create Enable/disable a Pod Disruption Budget creation
+  ## @param headscale.pdb.minAvailable Minimum number/percentage of pods that should remain scheduled
+  ## @param headscale.pdb.maxUnavailable Maximum number/percentage of pods that may be made unavailable. Defaults to `1` if both `headscale.pdb.minAvailable` and `headscale.pdb.maxUnavailable` are empty.
+  ##
+  pdb:
+    create: true
+    minAvailable: ""
+    maxUnavailable: ""
+  ## Autoscaling configuration
+  ##
+  autoscaling:
+    vpa:
+      ## @param headscale.autoscaling.vpa.enabled Enable VPA for headscale pods
+      ##
+      enabled: false
+      ## @param headscale.autoscaling.vpa.annotations Annotations for VPA resource
+      annotations: {}
+      ## @param headscale.autoscaling.vpa.controlledResources VPA List of resources that the vertical pod autoscaler can control
+      controlledResources: []
+      ## @param headscale.autoscaling.vpa.maxAllowed VPA Max allowed resources for the pod
+      maxAllowed: {}
+      ## @param headscale.autoscaling.vpa.minAllowed VPA Min allowed resources for the pod
+      minAllowed: {}
+      updatePolicy:
+        ## @param headscale.autoscaling.vpa.updatePolicy.updateMode Autoscaling update policy
+        updateMode: Auto
+    hpa:
+      ## @param headscale.autoscaling.hpa.enabled Enable HPA for headscale pods
+      ##
+      enabled: false
+      ## @param headscale.autoscaling.hpa.minReplicas Minimum number of headscale replicas
+      minReplicas: 1
+      ## @param headscale.autoscaling.hpa.maxReplicas Maximum number of headscale replicas
+      maxReplicas: 3
+      ## @param headscale.autoscaling.hpa.targetCPU Target CPU utilization percentage
+      targetCPU: 75
+      ## @param headscale.autoscaling.hpa.targetMemory Target Memory utilization percentage
+      targetMemory: ""
+
+## @section Traffic Exposure Parameters
+##
+
+## headscale service parameters
+##
+service:
+  ## @param service.type headscale service type
+  ##
+  type: ClusterIP
+  ## @param service.ports.http headscale service HTTP port
+  ## @param service.ports.grpc headscale service gRPC port
+  ##
+  ports:
+    http: 8080
+    grpc: 50443
+  ## Node ports to expose
+  ## @param service.nodePorts.http Node port for HTTP
+  ## @param service.nodePorts.grpc Node port for gRPC
+  ##
+  nodePorts:
+    http: ""
+    grpc: ""
+  ## @param service.clusterIP headscale service Cluster IP
+  ##
+  clusterIP: ""
+  ## @param service.loadBalancerIP headscale service Load Balancer IP
+  ##
+  loadBalancerIP: ""
+  ## @param service.loadBalancerSourceRanges headscale service Load Balancer sources
+  ##
+  loadBalancerSourceRanges: []
+  ## @param service.externalTrafficPolicy headscale service external traffic policy
+  ##
+  externalTrafficPolicy: Cluster
+  ## @param service.annotations Additional custom annotations for headscale service
+  ##
+  annotations: {}
+  ## @param service.extraPorts Extra ports to expose in headscale service (normally used with the `sidecars` value)
+  ##
+  extraPorts: []
+  ## @param service.sessionAffinity Control where client requests go, to the same pod or round-robin
+  ##
+  sessionAffinity: None
+  ## @param service.sessionAffinityConfig Additional settings for the sessionAffinity
+  ##
+  sessionAffinityConfig: {}
+
+## Network Policies
+##
+networkPolicy:
+  ## @param networkPolicy.enabled Specifies whether a NetworkPolicy should be created
+  ##
+  enabled: true
+  ## @param networkPolicy.allowExternal Don't require server label for connections
+  ##
+  allowExternal: true
+  ## @param networkPolicy.allowExternalEgress Allow the pod to access any range of port and all destinations.
+  ##
+  allowExternalEgress: true
+  ## @param networkPolicy.addExternalClientAccess Allow access from pods with client label set to "true". Ignored if `networkPolicy.allowExternal` is true.
+  ##
+  addExternalClientAccess: true
+  ## @param networkPolicy.extraIngress [array] Add extra ingress rules to the NetworkPolicy
+  ##
+  extraIngress: []
+  ## @param networkPolicy.extraEgress [array] Add extra egress rules to the NetworkPolicy (ignored if allowExternalEgress=true)
+  ##
+  extraEgress: []
+  ## @param networkPolicy.ingressPodMatchLabels [object] Labels to match to allow traffic from other pods. Ignored if `networkPolicy.allowExternal` is true.
+  ##
+  ingressPodMatchLabels: {}
+  ## @param networkPolicy.ingressNSMatchLabels [object] Labels to match to allow traffic from other namespaces. Ignored if `networkPolicy.allowExternal` is true.
+  ## @param networkPolicy.ingressNSPodMatchLabels [object] Pod labels to match to allow traffic from other namespaces. Ignored if `networkPolicy.allowExternal` is true.
+  ##
+  ingressNSMatchLabels: {}
+  ingressNSPodMatchLabels: {}
+
+## headscale ingress parameters
+##
+ingress:
+  ## @param ingress.enabled Enable ingress record generation for headscale
+  ##
+  enabled: false
+  ## @param ingress.pathType Ingress path type
+  ##
+  pathType: ImplementationSpecific
+  ## @param ingress.apiVersion Force Ingress API version (automatically detected if not set)
+  ##
+  apiVersion: ""
+  ## @param ingress.hostname Default host for the ingress record
+  ##
+  hostname: headscale.local
+  ## @param ingress.ingressClassName IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)
+  ##
+  ingressClassName: ""
+  ## @param ingress.path Default path for the ingress record
+  ##
+  path: /
+  ## @param ingress.annotations Additional annotations for the Ingress resource
+  ##
+  annotations: {}
+  ## @param ingress.tls Enable TLS configuration for the host defined at `ingress.hostname` parameter
+  ##
+  tls: false
+  ## @param ingress.selfSigned Create a TLS secret for this ingress record using self-signed certificates generated by Helm
+  ##
+  selfSigned: false
+  ## @param ingress.extraHosts An array with additional hostname(s) to be covered with the ingress record
+  ##
+  extraHosts: []
+  ## @param ingress.extraPaths An array with additional arbitrary paths that may need to be added to the ingress under the main host
+  ##
+  extraPaths: []
+  ## @param ingress.extraTls TLS configuration for additional hostname(s) to be covered with this ingress record
+  ##
+  extraTls: []
+  ## @param ingress.secrets Custom TLS certificates as secrets
+  ##
+  secrets: []
+  ## @param ingress.extraRules Additional rules to be covered with this ingress record
+  ##
+  extraRules: []
+
+## Gateway API HTTPRoute configuration
+## ref: https://gateway-api.sigs.k8s.io/concepts/api-overview/#httproute
+## @param route [object] Map of HTTPRoute configurations. Each key is a route name; "main" omits the suffix from the resource name.
+## e.g:
+## route:
+##   main:
+##     enabled: true
+##     parentRefs:
+##       - name: my-gateway
+##         namespace: gateway-ns
+##         sectionName: https
+##     hostnames:
+##       - headscale.example.com
+##     matches:
+##       - path:
+##           type: PathPrefix
+##           value: /
+##   redirect:
+##     enabled: true
+##     parentRefs:
+##       - name: my-gateway
+##         namespace: gateway-ns
+##         sectionName: http
+##     hostnames:
+##       - headscale.example.com
+##     httpsRedirect: true
+##
+route: {}
+
+## @section Persistence Parameters
+##
+
+## Enable persistence using Persistent Volume Claims
+## ref: https://kubernetes.io/docs/concepts/storage/persistent-volumes/
+##
+persistence:
+  ## @param persistence.enabled Enable persistence using Persistent Volume Claims
+  ##
+  enabled: true
+  ## @param persistence.mountPath Path to mount the volume at (headscale data directory)
+  ##
+  mountPath: /var/lib/headscale
+  ## @param persistence.subPath The subdirectory of the volume to mount to
+  ##
+  subPath: ""
+  ## @param persistence.storageClass Storage class of backing PVC
+  ##
+  storageClass: ""
+  ## @param persistence.annotations Persistent Volume Claim annotations
+  ##
+  annotations: {}
+  ## @param persistence.accessModes Persistent Volume Access Modes
+  ##
+  accessModes:
+    - ReadWriteOnce
+  ## @param persistence.size Size of data volume
+  ##
+  size: 1Gi
+  ## @param persistence.dataSource Custom PVC data source
+  ##
+  dataSource: {}
+  ## @param persistence.existingClaim The name of an existing PVC to use for persistence
+  ##
+  existingClaim: ""
+  ## @param persistence.selector Selector to match an existing Persistent Volume for headscale data PVC
+  ##
+  selector: {}
+
+## @section Default init containers Parameters
+
+defaultInitContainers:
+  ## 'volume-permissions' init container
+  ##
+  volumePermissions:
+    ## @param defaultInitContainers.volumePermissions.enabled Enable init container that adapts the owner/group of the PV mount point(s)
+    ##
+    enabled: false
+    ## OS Shell + Utility image
+    ## ref: https://hub.docker.com/r/bitnami/os-shell
+    ## @param defaultInitContainers.volumePermissions.image.registry OS Shell image registry
+    ## @param defaultInitContainers.volumePermissions.image.repository OS Shell image repository
+    ## @param defaultInitContainers.volumePermissions.image.tag OS Shell image tag
+    ## @param defaultInitContainers.volumePermissions.image.digest OS Shell image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag
+    ## @param defaultInitContainers.volumePermissions.image.pullPolicy OS Shell image pull policy
+    ## @param defaultInitContainers.volumePermissions.image.pullSecrets OS Shell image pull secrets
+    ##
+    image:
+      registry: docker.io
+      repository: bitnami/os-shell
+      tag: 12-debian-12-r46
+      digest: ""
+      pullPolicy: IfNotPresent
+      pullSecrets: []
+    ## Configure "volume-permissions" init-container Security Context
+    ## @param defaultInitContainers.volumePermissions.containerSecurityContext.enabled Enable init container Security Context
+    ## @param defaultInitContainers.volumePermissions.containerSecurityContext.seLinuxOptions Set SELinux options in init container
+    ## @param defaultInitContainers.volumePermissions.containerSecurityContext.runAsUser Set runAsUser in init container Security Context
+    ## @param defaultInitContainers.volumePermissions.containerSecurityContext.privileged Set privileged in init container Security Context
+    ## @param defaultInitContainers.volumePermissions.containerSecurityContext.allowPrivilegeEscalation Set allowPrivilegeEscalation in init container Security Context
+    ## @param defaultInitContainers.volumePermissions.containerSecurityContext.capabilities.add List of capabilities to add in init container
+    ## @param defaultInitContainers.volumePermissions.containerSecurityContext.capabilities.drop List of capabilities to drop in init container
+    ## @param defaultInitContainers.volumePermissions.containerSecurityContext.seccompProfile.type Set seccomp profile in init container
+    ##
+    containerSecurityContext:
+      enabled: true
+      seLinuxOptions: {}
+      runAsUser: 0
+      privileged: false
+      allowPrivilegeEscalation: false
+      capabilities:
+        add: []
+        drop: ["ALL"]
+      seccompProfile:
+        type: "RuntimeDefault"
+    ## @param defaultInitContainers.volumePermissions.resourcesPreset Set init container resources according to one of the preset
+    resourcesPreset: "nano"
+    ## @param defaultInitContainers.volumePermissions.resources Set init container requests and limits for different resources like CPU or memory
+    resources: {}
+
+## @section Other Parameters
+##
+
+## RBAC configuration
+##
+rbac:
+  ## @param rbac.create Specifies whether RBAC resources should be created
+  ##
+  create: false
+  ## @param rbac.rules Custom RBAC rules to set
+  ##
+  rules: []
+
+## ServiceAccount configuration
+##
+serviceAccount:
+  ## @param serviceAccount.create Specifies whether a ServiceAccount should be created
+  ##
+  create: true
+  ## @param serviceAccount.name The name of the ServiceAccount to use.
+  ##
+  name: ""
+  ## @param serviceAccount.annotations Additional Service Account annotations (evaluated as a template)
+  ##
+  annotations: {}
+  ## @param serviceAccount.automountServiceAccountToken Automount service account token for the server service account
+  ##
+  automountServiceAccountToken: false
+
+## Prometheus metrics
+##
+metrics:
+  ## @param metrics.enabled Enable the export of Prometheus metrics
+  ##
+  enabled: true
+  ## Prometheus Operator ServiceMonitor configuration
+  ##
+  serviceMonitor:
+    ## @param metrics.serviceMonitor.enabled if `true`, creates a Prometheus Operator ServiceMonitor (also requires `metrics.enabled` to be `true`)
+    ##
+    enabled: false
+    ## @param metrics.serviceMonitor.namespace Namespace in which Prometheus is running
+    ##
+    namespace: ""
+    ## @param metrics.serviceMonitor.annotations Additional custom annotations for the ServiceMonitor
+    ##
+    annotations: {}
+    ## @param metrics.serviceMonitor.labels Extra labels for the ServiceMonitor
+    ##
+    labels: {}
+    ## @param metrics.serviceMonitor.jobLabel The name of the label on the target service to use as the job name in Prometheus
+    ##
+    jobLabel: ""
+    ## @param metrics.serviceMonitor.honorLabels honorLabels chooses the metric's labels on collisions with target labels
+    ##
+    honorLabels: false
+    ## @param metrics.serviceMonitor.tlsConfig [object] TLS configuration used for scrape endpoints used by Prometheus
+    ##
+    tlsConfig: {}
+    ## @param metrics.serviceMonitor.interval Interval at which metrics should be scraped.
+    ##
+    interval: ""
+    ## @param metrics.serviceMonitor.scrapeTimeout Timeout after which the scrape is ended
+    ##
+    scrapeTimeout: ""
+    ## @param metrics.serviceMonitor.metricRelabelings Specify additional relabeling of metrics
+    ##
+    metricRelabelings: []
+    ## @param metrics.serviceMonitor.relabelings Specify general relabeling
+    ##
+    relabelings: []
+    ## @param metrics.serviceMonitor.selector Prometheus instance selector labels
+    ##
+    selector: {}
