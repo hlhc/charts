@@ -61,8 +61,10 @@ spec:
                 name: {{ $apiKeySecretName }}
             {{- end }}
             {{- if and .Values.headplane.oidc.enabled .Values.headplane.oidc.existingSecret }}
-            - secretRef:
+            - name: HEADPLANE_OIDC_CLIENT_SECRET
+              secretRef:
                 name: {{ .Values.headplane.oidc.existingSecret }}
+                key: {{ .Values.headplane.oidc.existingSecretKey | default "client_secret" }}
             {{- end }}
             {{- if .Values.headplane.extraEnvVarsCM }}
             - configMapRef:
