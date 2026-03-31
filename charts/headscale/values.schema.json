@@ -1574,9 +1574,9 @@
                                     "default": "/etc/headscale/config.yaml"
                                 },
                                 "config_strict": {
-                                    "type": "string",
+                                    "type": "boolean",
                                     "description": "Enable strict config parsing",
-                                    "default": "true"
+                                    "default": true
                                 }
                             }
                         },
