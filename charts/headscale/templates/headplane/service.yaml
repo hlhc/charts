@@ -32,5 +32,5 @@ spec:
       {{- end }}
   {{- $podLabels := include "common.tplvalues.merge" (dict "values" (list .Values.headscale.podLabels .Values.commonLabels) "context" .) | fromYaml }}
   selector: {{- include "common.labels.matchLabels" ( dict "customLabels" $podLabels "context" $ ) | nindent 4 }}
-    app.kubernetes.io/component: headscale
+    app.kubernetes.io/component: headplane
 {{- end }}
