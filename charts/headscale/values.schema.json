@@ -1512,7 +1512,7 @@
                         "tag": {
                             "type": "string",
                             "description": "headplane image tag",
-                            "default": "0.6.0"
+                            "default": "0.6.2"
                         },
                         "digest": {
                             "type": "string",

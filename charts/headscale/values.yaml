@@ -843,7 +843,7 @@ headplane:
   image:
     registry: ghcr.io
     repository: tale/headplane
-    tag: "0.6.0"
+    tag: "0.6.2"
     digest: ""
     pullPolicy: IfNotPresent
     pullSecrets: []
