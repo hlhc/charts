@@ -49,19 +49,22 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            {{- if and .Values.headplane.oidc.enabled (or .Values.headplane.oidc.clientSecret .Values.headplane.oidc.existingSecret) }}
+            - name: HEADPLANE_OIDC__CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "headscale.headplane.oidcSecretName" . }}
+                  key: {{ .Values.headplane.oidc.existingSecretKey }}
+            {{- end }}
             {{- if .Values.headplane.extraEnvVars }}
             {{- include "common.tplvalues.render" (dict "value" .Values.headplane.extraEnvVars "context" $) | nindent 12 }}
             {{- end }}
           {{- $apiKeySecretName := include "headscale.headplane.apiKeySecretName" . }}
-          {{- if or $apiKeySecretName (and .Values.headplane.oidc.enabled .Values.headplane.oidc.existingSecret) .Values.headplane.extraEnvVarsCM .Values.headplane.extraEnvVarsSecret }}
+          {{- if or $apiKeySecretName .Values.headplane.extraEnvVarsCM .Values.headplane.extraEnvVarsSecret }}
           envFrom:
             {{- if $apiKeySecretName }}
             - secretRef:
                 name: {{ $apiKeySecretName }}
-            {{- end }}
-            {{- if and .Values.headplane.oidc.enabled .Values.headplane.oidc.existingSecret }}
-            - secretRef:
-                name: {{ .Values.headplane.oidc.existingSecret }}
             {{- end }}
             {{- if .Values.headplane.extraEnvVarsCM }}
             - configMapRef:

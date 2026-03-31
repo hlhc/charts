@@ -102,7 +102,7 @@ spec:
           {{- end }}
           env:
             {{- if and .Values.headscale.oidc.enabled (or .Values.headscale.oidc.clientSecret .Values.headscale.oidc.existingSecret) }}
-            - name: HEADSCALE_OIDC_CLIENT_SECRET
+            - name: HEADSCALE_OIDC__CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: {{ include "headscale.oidcSecretName" . }}

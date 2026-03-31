@@ -65,6 +65,18 @@ Uses existingSecret if set, otherwise the managed Secret.
 {{- end -}}
 
 {{/*
+Return the name of the Secret containing the headplane OIDC client secret.
+Uses existingSecret if set, otherwise the managed Secret.
+*/}}
+{{- define "headscale.headplane.oidcSecretName" -}}
+{{- if .Values.headplane.oidc.existingSecret -}}
+    {{- .Values.headplane.oidc.existingSecret -}}
+{{- else -}}
+    {{- printf "%s-headplane-oidc" (include "common.names.fullname" .) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Return true if cert-manager required annotations for TLS signed certificates are set in the Ingress annotations
 Ref: https://cert-manager.io/docs/usage/ingress/#supported-annotations
 */}}

@@ -1635,10 +1635,20 @@
                             "description": "OIDC client ID",
                             "default": ""
                         },
+                        "clientSecret": {
+                            "type": "string",
+                            "description": "OIDC client secret (stored in a managed Secret). Ignored if existingSecret is set.",
+                            "default": ""
+                        },
                         "existingSecret": {
                             "type": "string",
-                            "description": "Name of an existing secret containing OIDC credentials (mounted as envFrom)",
+                            "description": "Name of an existing secret containing the OIDC client secret",
                             "default": ""
+                        },
+                        "existingSecretKey": {
+                            "type": "string",
+                            "description": "Key in the existing secret containing the OIDC client secret",
+                            "default": "client_secret"
                         }
                     }
                 },

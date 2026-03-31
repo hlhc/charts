@@ -903,9 +903,15 @@ headplane:
     ## @param headplane.oidc.client_id OIDC client ID
     ##
     client_id: ""
-    ## @param headplane.oidc.existingSecret Name of an existing secret containing OIDC credentials (mounted as envFrom)
+    ## @param headplane.oidc.clientSecret OIDC client secret (stored in a managed Secret). Ignored if existingSecret is set.
+    ##
+    clientSecret: ""
+    ## @param headplane.oidc.existingSecret Name of an existing secret containing the OIDC client secret
     ##
     existingSecret: ""
+    ## @param headplane.oidc.existingSecretKey Key in the existing secret containing the OIDC client secret
+    ##
+    existingSecretKey: "client_secret"
   ## API key used by headplane to communicate with headscale
   ##
   apiKey:
