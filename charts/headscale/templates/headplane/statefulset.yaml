@@ -53,18 +53,19 @@ spec:
             {{- if .Values.headplane.extraEnvVars }}
             {{- include "common.tplvalues.render" (dict "value" .Values.headplane.extraEnvVars "context" $) | nindent 12 }}
             {{- end }}
+            {{- if and .Values.headplane.oidc.enabled .Values.headplane.oidc.existingSecret }}
+            - name: HEADPLANE_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.headplane.oidc.existingSecret }}
+                  key: {{ .Values.headplane.oidc.existingSecretKey | default "client_secret" }}
+            {{- end }}
           {{- $apiKeySecretName := include "headscale.headplane.apiKeySecretName" . }}
-          {{- if or $apiKeySecretName (and .Values.headplane.oidc.enabled .Values.headplane.oidc.existingSecret) .Values.headplane.extraEnvVarsCM .Values.headplane.extraEnvVarsSecret }}
+          {{- if or $apiKeySecretName .Values.headplane.extraEnvVarsCM .Values.headplane.extraEnvVarsSecret }}
           envFrom:
             {{- if $apiKeySecretName }}
             - secretRef:
                 name: {{ $apiKeySecretName }}
-            {{- end }}
-            {{- if and .Values.headplane.oidc.enabled .Values.headplane.oidc.existingSecret }}
-            - name: HEADPLANE_OIDC_CLIENT_SECRET
-              secretRef:
-                name: {{ .Values.headplane.oidc.existingSecret }}
-                key: {{ .Values.headplane.oidc.existingSecretKey | default "client_secret" }}
             {{- end }}
             {{- if .Values.headplane.extraEnvVarsCM }}
             - configMapRef:
