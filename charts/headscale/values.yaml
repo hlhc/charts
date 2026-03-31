@@ -873,7 +873,7 @@ headplane:
       config_path: "/etc/headscale/config.yaml"
       ## @param headplane.config.headscale.config_strict Enable strict config parsing
       ##
-      config_strict: "true"
+      config_strict: true
     integration:
       kubernetes:
         ## @param headplane.config.integration.kubernetes.enabled Enable Kubernetes integration
