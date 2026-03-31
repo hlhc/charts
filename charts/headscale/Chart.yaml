@@ -10,7 +10,7 @@ dependencies:
   - name: common
     repository: oci://ghcr.io/hlhc/charts
     version: 2.x.x
-description: Headscale is an open source, self-hosted implementation of the Tailscale control server.
+description: Headscale is an open source, self-hosted implementation of the Tailscale control server, with optional headplane web UI.
 home: https://headscale.net
 icon: https://headscale.net/logo.png
 keywords:
@@ -26,4 +26,4 @@ name: headscale
 sources:
   - https://github.com/juanfont/headscale
   - https://github.com/juanfont/headscale/pkgs/container/headscale
-version: 0.1.1
+version: 0.1.2

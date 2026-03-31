@@ -1,0 +1,89 @@
+{{- /*
+Copyright Cyrus Ho. All Rights Reserved.
+SPDX-License-Identifier: APACHE-2.0
+*/}}
+
+{{- if and .Values.headplane.enabled .Values.headplane.apiKey.autoGenerate (not .Values.headplane.apiKey.existingSecret) }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ printf "%s-headplane-token" (include "common.names.fullname" .) | trunc 63 | trimSuffix "-" }}
+  namespace: {{ include "common.names.namespace" . | quote }}
+  labels: {{- include "common.labels.standard" ( dict "customLabels" .Values.commonLabels "context" $ ) | nindent 4 }}
+    app.kubernetes.io/component: headplane
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "helm.sh/hook-weight": "1"
+    {{- if .Values.commonAnnotations }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+    {{- end }}
+spec:
+  activeDeadlineSeconds: 600
+  template:
+    metadata:
+      labels: {{- include "common.labels.matchLabels" ( dict "customLabels" .Values.commonLabels "context" $ ) | nindent 8 }}
+        app.kubernetes.io/component: headplane-token-job
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: {{ include "headscale.headplane.jobServiceAccountName" . }}
+      containers:
+        - name: generate-token
+          image: bitnami/kubectl:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+
+              RESET='\033[0m'
+              BOLD='\033[1m'
+              CYAN='\033[0;36m'
+              GREEN='\033[0;32m'
+              YELLOW='\033[0;33m'
+              RED='\033[0;31m'
+
+              info()    { printf "${CYAN}${BOLD}[INFO]${RESET}  %s\n" "$*"; }
+              ok()      { printf "${GREEN}${BOLD}[OK]${RESET}    %s\n" "$*"; }
+              warn()    { printf "${YELLOW}${BOLD}[WARN]${RESET}  %s\n" "$*"; }
+              error()   { printf "${RED}${BOLD}[ERROR]${RESET} %s\n" "$*" >&2; }
+
+              HEADSCALE_SS="{{ include "common.names.fullname" . }}"
+              HEADSCALE_POD="${HEADSCALE_SS}-0"
+              HEADPLANE_SS="{{ printf "%s-headplane" (include "common.names.fullname" .) }}"
+              SECRET_NAME="{{ printf "%s-headplane-api-key" (include "common.names.fullname" .) }}"
+              NAMESPACE="{{ include "common.names.namespace" . }}"
+              PLACEHOLDER="placeholder-token-will-be-replaced-by-job"
+
+              info "Waiting for headscale StatefulSet to be ready..."
+              kubectl rollout status statefulset/"${HEADSCALE_SS}" -n "${NAMESPACE}" --timeout=240s
+
+              info "Checking if API token needs to be generated..."
+              CURRENT_TOKEN=""
+              if kubectl get secret "${SECRET_NAME}" -n "${NAMESPACE}" >/dev/null 2>&1; then
+                CURRENT_TOKEN=$(kubectl get secret "${SECRET_NAME}" -n "${NAMESPACE}" \
+                  -o jsonpath='{.data.HEADPLANE_OIDC__HEADSCALE_API_KEY}' | base64 -d 2>/dev/null || true)
+              fi
+
+              if [ -n "${CURRENT_TOKEN}" ] && [ "${CURRENT_TOKEN}" != "${PLACEHOLDER}" ]; then
+                warn "Real API token already exists. Skipping generation."
+                exit 0
+              fi
+
+              info "Generating headscale API token..."
+              TOKEN=$(kubectl exec "${HEADSCALE_POD}" -n "${NAMESPACE}" -c headscale \
+                -- headscale apikeys create -e 100y)
+
+              if [ -z "${TOKEN}" ]; then
+                error "Failed to generate API token."
+                exit 1
+              fi
+
+              kubectl patch secret "${SECRET_NAME}" -n "${NAMESPACE}" \
+                -p="{\"data\":{\"HEADPLANE_OIDC__HEADSCALE_API_KEY\":\"$(printf '%s' "${TOKEN}" | base64 -w0)\"}}"
+              ok "Secret ${SECRET_NAME} updated with generated token."
+
+              info "Restarting headplane StatefulSet to pick up new token..."
+              kubectl rollout restart statefulset/"${HEADPLANE_SS}" -n "${NAMESPACE}"
+              ok "Done."
+{{- end }}

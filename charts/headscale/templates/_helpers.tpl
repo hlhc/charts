@@ -159,7 +159,14 @@ Returns empty string if no API key secret is configured.
 {{- define "headscale.headplane.apiKeySecretName" -}}
 {{- if .Values.headplane.apiKey.existingSecret -}}
 {{- .Values.headplane.apiKey.existingSecret -}}
-{{- else if .Values.headplane.apiKey.value -}}
+{{- else if or .Values.headplane.apiKey.value .Values.headplane.apiKey.autoGenerate -}}
 {{- printf "%s-headplane-api-key" (include "common.names.fullname" .) -}}
 {{- end -}}
+{{- end -}}
+
+{{/*
+Return the name of the ServiceAccount used by the API key generation Job.
+*/}}
+{{- define "headscale.headplane.jobServiceAccountName" -}}
+{{- printf "%s-headplane-token-job" (include "common.names.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}

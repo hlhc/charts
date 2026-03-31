@@ -916,6 +916,11 @@ headplane:
     ## The secret must have the key HEADPLANE_OIDC__HEADSCALE_API_KEY
     ##
     existingSecret: ""
+    ## @param headplane.apiKey.autoGenerate Automatically generate a headscale API key via a post-install/post-upgrade Job.
+    ## When enabled, a placeholder Secret is created at install time and a Job patches it with a real key.
+    ## Requires headplane.rbac.create=true. Ignored if existingSecret is set.
+    ##
+    autoGenerate: false
   ## @param headplane.cookieSecret Cookie secret for headplane sessions.
   ## If not set, a random 32-character string is generated on each helm upgrade (invalidates sessions).
   ## Set this explicitly in production to preserve sessions across upgrades.

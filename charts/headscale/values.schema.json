@@ -1654,6 +1654,11 @@
                             "type": "string",
                             "description": "Name of an existing secret containing the API key.",
                             "default": ""
+                        },
+                        "autoGenerate": {
+                            "type": "boolean",
+                            "description": "Automatically generate a headscale API key via a post-install/post-upgrade Job.",
+                            "default": false
                         }
                     }
                 },
