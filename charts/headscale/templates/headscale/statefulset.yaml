@@ -183,6 +183,8 @@ spec:
             - name: empty-dir
               mountPath: /tmp
               subPath: tmp-dir
+            - name: run-dir
+              mountPath: /var/run/headscale
             {{- if .Values.headscale.extraVolumeMounts }}
             {{- include "common.tplvalues.render" (dict "value" .Values.headscale.extraVolumeMounts "context" $) | nindent 12 }}
             {{- end }}
@@ -192,6 +194,9 @@ spec:
       volumes:
         - name: empty-dir
           emptyDir: {}
+        - name: run-dir
+          emptyDir:
+            medium: Memory
         - name: config
           configMap:
             name: {{ include "headscale.configmapName" . }}
