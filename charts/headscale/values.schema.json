@@ -1487,6 +1487,288 @@
                     }
                 }
             }
+        },
+        "headplane": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "description": "Enable headplane as a sidecar container alongside headscale",
+                    "default": false
+                },
+                "image": {
+                    "type": "object",
+                    "properties": {
+                        "registry": {
+                            "type": "string",
+                            "description": "headplane image registry",
+                            "default": "ghcr.io"
+                        },
+                        "repository": {
+                            "type": "string",
+                            "description": "headplane image repository",
+                            "default": "tale/headplane"
+                        },
+                        "tag": {
+                            "type": "string",
+                            "description": "headplane image tag",
+                            "default": "0.6.0"
+                        },
+                        "digest": {
+                            "type": "string",
+                            "description": "headplane image digest in the way sha256:aa....",
+                            "default": ""
+                        },
+                        "pullPolicy": {
+                            "type": "string",
+                            "description": "headplane image pull policy",
+                            "default": "IfNotPresent"
+                        },
+                        "pullSecrets": {
+                            "type": "array",
+                            "description": "headplane image pull secrets",
+                            "default": [],
+                            "items": {}
+                        }
+                    }
+                },
+                "containerPort": {
+                    "type": "number",
+                    "description": "headplane container port",
+                    "default": 3000
+                },
+                "config": {
+                    "type": "object",
+                    "properties": {
+                        "server": {
+                            "type": "object",
+                            "properties": {
+                                "host": {
+                                    "type": "string",
+                                    "description": "Server host address",
+                                    "default": "0.0.0.0"
+                                },
+                                "port": {
+                                    "type": "number",
+                                    "description": "Server port",
+                                    "default": 3000
+                                },
+                                "cookie_secure": {
+                                    "type": "boolean",
+                                    "description": "Use secure cookies (set to false for HTTP)",
+                                    "default": true
+                                }
+                            }
+                        },
+                        "headscale": {
+                            "type": "object",
+                            "properties": {
+                                "url": {
+                                    "type": "string",
+                                    "description": "URL of the headscale server",
+                                    "default": "https://headscale.example.com"
+                                },
+                                "config_path": {
+                                    "type": "string",
+                                    "description": "Path to headscale config file inside the container",
+                                    "default": "/etc/headscale/config.yaml"
+                                },
+                                "config_strict": {
+                                    "type": "string",
+                                    "description": "Enable strict config parsing",
+                                    "default": "true"
+                                }
+                            }
+                        },
+                        "integration": {
+                            "type": "object",
+                            "properties": {
+                                "kubernetes": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "description": "Enable Kubernetes integration",
+                                            "default": true
+                                        },
+                                        "validate_manifest": {
+                                            "type": "boolean",
+                                            "description": "Validate Kubernetes manifests on config write",
+                                            "default": true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "oidc": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "Enable OIDC authentication for headplane",
+                            "default": false
+                        },
+                        "issuer": {
+                            "type": "string",
+                            "description": "OIDC issuer URL",
+                            "default": ""
+                        },
+                        "disable_api_key_login": {
+                            "type": "boolean",
+                            "description": "Disable API key login when OIDC is enabled",
+                            "default": true
+                        },
+                        "token_endpoint_auth_method": {
+                            "type": "string",
+                            "description": "OIDC token endpoint auth method",
+                            "default": "client_secret_post"
+                        },
+                        "redirect_uri": {
+                            "type": "string",
+                            "description": "OIDC redirect URI (e.g. https://headplane.example.com/admin/oidc/callback)",
+                            "default": ""
+                        },
+                        "client_id": {
+                            "type": "string",
+                            "description": "OIDC client ID",
+                            "default": ""
+                        },
+                        "existingSecret": {
+                            "type": "string",
+                            "description": "Name of an existing secret containing OIDC credentials (mounted as envFrom)",
+                            "default": ""
+                        }
+                    }
+                },
+                "apiKey": {
+                    "type": "object",
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "description": "Headscale API key value (stored in a managed Secret). Ignored if existingSecret is set.",
+                            "default": ""
+                        },
+                        "existingSecret": {
+                            "type": "string",
+                            "description": "Name of an existing secret containing the API key.",
+                            "default": ""
+                        }
+                    }
+                },
+                "cookieSecret": {
+                    "type": "string",
+                    "description": "Cookie secret for headplane sessions.",
+                    "default": ""
+                },
+                "extraEnvVars": {
+                    "type": "array",
+                    "description": "Array with extra environment variables to add to the headplane container",
+                    "default": [],
+                    "items": {}
+                },
+                "extraEnvVarsCM": {
+                    "type": "string",
+                    "description": "Name of existing ConfigMap containing extra env vars for headplane",
+                    "default": ""
+                },
+                "extraEnvVarsSecret": {
+                    "type": "string",
+                    "description": "Name of existing Secret containing extra env vars for headplane",
+                    "default": ""
+                },
+                "resourcesPreset": {
+                    "type": "string",
+                    "description": "Set headplane container resources according to one common preset (allowed values: none, nano, micro, small, medium, large, xlarge, 2xlarge)",
+                    "default": "nano"
+                },
+                "resources": {
+                    "type": "object",
+                    "description": "Set headplane container requests and limits for different resources like CPU or memory",
+                    "default": {}
+                },
+                "containerSecurityContext": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "Enable headplane container Security Context",
+                            "default": false
+                        }
+                    }
+                },
+                "serviceAccount": {
+                    "type": "object",
+                    "properties": {
+                        "create": {
+                            "type": "boolean",
+                            "description": "Create a dedicated ServiceAccount for headplane",
+                            "default": true
+                        },
+                        "name": {
+                            "type": "string",
+                            "description": "Name of the ServiceAccount to use. Defaults to \"<fullname>-headplane\".",
+                            "default": ""
+                        },
+                        "annotations": {
+                            "type": "object",
+                            "description": "Additional annotations for the headplane ServiceAccount",
+                            "default": {}
+                        },
+                        "automountServiceAccountToken": {
+                            "type": "boolean",
+                            "description": "Automount service account token (required for Kubernetes integration)",
+                            "default": true
+                        }
+                    }
+                },
+                "rbac": {
+                    "type": "object",
+                    "properties": {
+                        "create": {
+                            "type": "boolean",
+                            "description": "Create Role and RoleBinding for headplane (required for Kubernetes integration)",
+                            "default": true
+                        }
+                    }
+                },
+                "service": {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "description": "headplane service type",
+                            "default": "ClusterIP"
+                        },
+                        "port": {
+                            "type": "number",
+                            "description": "headplane service port",
+                            "default": 3000
+                        },
+                        "nodePort": {
+                            "type": "string",
+                            "description": "headplane service node port (for NodePort/LoadBalancer type)",
+                            "default": ""
+                        },
+                        "clusterIP": {
+                            "type": "string",
+                            "description": "headplane service Cluster IP",
+                            "default": ""
+                        },
+                        "annotations": {
+                            "type": "object",
+                            "description": "Additional custom annotations for the headplane service",
+                            "default": {}
+                        }
+                    }
+                },
+                "adminPath": {
+                    "type": "string",
+                    "description": "Path prefix routed to headplane in the shared ingress/httproute",
+                    "default": "/admin"
+                }
+            }
         }
     }
 }

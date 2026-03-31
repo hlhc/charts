@@ -119,3 +119,47 @@ headscale: headscale.oidc.clientSecret
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Return the proper headplane image name.
+*/}}
+{{- define "headscale.headplane.image" -}}
+{{- include "common.images.image" (dict "imageRoot" .Values.headplane.image "global" .Values.global) -}}
+{{- end -}}
+
+{{/*
+Return the name of the headplane ServiceAccount.
+*/}}
+{{- define "headscale.headplane.serviceAccountName" -}}
+{{- if .Values.headplane.serviceAccount.create -}}
+    {{ default (printf "%s-headplane" (include "common.names.fullname" .)) .Values.headplane.serviceAccount.name }}
+{{- else -}}
+    {{ default "default" .Values.headplane.serviceAccount.name }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Return a stable cookie secret for headplane.
+Uses the configured value if set, otherwise generates a random 32-char string.
+NOTE: random generation means sessions are invalidated on every helm upgrade.
+Set headplane.cookieSecret in your values for stable sessions.
+*/}}
+{{- define "headscale.headplane.cookieSecret" -}}
+{{- if .Values.headplane.cookieSecret -}}
+{{- .Values.headplane.cookieSecret -}}
+{{- else -}}
+{{- randAlphaNum 32 -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Return the name of the secret holding the headplane API key.
+Returns empty string if no API key secret is configured.
+*/}}
+{{- define "headscale.headplane.apiKeySecretName" -}}
+{{- if .Values.headplane.apiKey.existingSecret -}}
+{{- .Values.headplane.apiKey.existingSecret -}}
+{{- else if .Values.headplane.apiKey.value -}}
+{{- printf "%s-headplane-api-key" (include "common.names.fullname" .) -}}
+{{- end -}}
+{{- end -}}

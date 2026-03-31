@@ -821,3 +821,166 @@ metrics:
     ## @param metrics.serviceMonitor.selector Prometheus instance selector labels
     ##
     selector: {}
+
+## @section Headplane Parameters
+##
+
+## Headplane - Web UI for headscale management
+## ref: https://github.com/tale/headplane
+##
+headplane:
+  ## @param headplane.enabled Enable headplane as a sidecar container alongside headscale
+  ##
+  enabled: false
+  ## headplane image
+  ## @param headplane.image.registry [default: ghcr.io] headplane image registry
+  ## @param headplane.image.repository [default: tale/headplane] headplane image repository
+  ## @param headplane.image.tag headplane image tag
+  ## @param headplane.image.digest headplane image digest in the way sha256:aa....
+  ## @param headplane.image.pullPolicy headplane image pull policy
+  ## @param headplane.image.pullSecrets headplane image pull secrets
+  ##
+  image:
+    registry: ghcr.io
+    repository: tale/headplane
+    tag: "0.6.0"
+    digest: ""
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  ## @param headplane.containerPort headplane container port
+  ##
+  containerPort: 3000
+  ## headplane server configuration
+  ## ref: https://github.com/tale/headplane#configuration
+  ##
+  config:
+    server:
+      ## @param headplane.config.server.host Server host address
+      ##
+      host: "0.0.0.0"
+      ## @param headplane.config.server.port Server port
+      ##
+      port: 3000
+      ## @param headplane.config.server.cookie_secure Use secure cookies (set to false for HTTP)
+      ##
+      cookie_secure: true
+    headscale:
+      ## @param headplane.config.headscale.url URL of the headscale server
+      ##
+      url: "https://headscale.example.com"
+      ## @param headplane.config.headscale.config_path Path to headscale config file inside the container
+      ##
+      config_path: "/etc/headscale/config.yaml"
+      ## @param headplane.config.headscale.config_strict Enable strict config parsing
+      ##
+      config_strict: "true"
+    integration:
+      kubernetes:
+        ## @param headplane.config.integration.kubernetes.enabled Enable Kubernetes integration
+        ##
+        enabled: true
+        ## @param headplane.config.integration.kubernetes.validate_manifest Validate Kubernetes manifests on config write
+        ##
+        validate_manifest: true
+  ## OIDC configuration for headplane
+  ##
+  oidc:
+    ## @param headplane.oidc.enabled Enable OIDC authentication for headplane
+    ##
+    enabled: false
+    ## @param headplane.oidc.issuer OIDC issuer URL
+    ##
+    issuer: ""
+    ## @param headplane.oidc.disable_api_key_login Disable API key login when OIDC is enabled
+    ##
+    disable_api_key_login: true
+    ## @param headplane.oidc.token_endpoint_auth_method OIDC token endpoint auth method
+    ##
+    token_endpoint_auth_method: "client_secret_post"
+    ## @param headplane.oidc.redirect_uri OIDC redirect URI (e.g. https://headplane.example.com/admin/oidc/callback)
+    ##
+    redirect_uri: ""
+    ## @param headplane.oidc.client_id OIDC client ID
+    ##
+    client_id: ""
+    ## @param headplane.oidc.existingSecret Name of an existing secret containing OIDC credentials (mounted as envFrom)
+    ##
+    existingSecret: ""
+  ## API key used by headplane to communicate with headscale
+  ##
+  apiKey:
+    ## @param headplane.apiKey.value Headscale API key value (stored in a managed Secret). Ignored if existingSecret is set.
+    ##
+    value: ""
+    ## @param headplane.apiKey.existingSecret Name of an existing secret containing the API key.
+    ## The secret must have the key HEADPLANE_OIDC__HEADSCALE_API_KEY
+    ##
+    existingSecret: ""
+  ## @param headplane.cookieSecret Cookie secret for headplane sessions.
+  ## If not set, a random 32-character string is generated on each helm upgrade (invalidates sessions).
+  ## Set this explicitly in production to preserve sessions across upgrades.
+  ##
+  cookieSecret: ""
+  ## @param headplane.extraEnvVars Array with extra environment variables to add to the headplane container
+  ##
+  extraEnvVars: []
+  ## @param headplane.extraEnvVarsCM Name of existing ConfigMap containing extra env vars for headplane
+  ##
+  extraEnvVarsCM: ""
+  ## @param headplane.extraEnvVarsSecret Name of existing Secret containing extra env vars for headplane
+  ##
+  extraEnvVarsSecret: ""
+  ## headplane resource requests and limits
+  ## @param headplane.resourcesPreset Set headplane container resources according to one common preset (allowed values: none, nano, micro, small, medium, large, xlarge, 2xlarge)
+  ##
+  resourcesPreset: "nano"
+  ## @param headplane.resources Set headplane container requests and limits for different resources like CPU or memory
+  ##
+  resources: {}
+  ## Configure headplane Container Security Context
+  ## @param headplane.containerSecurityContext.enabled Enable headplane container Security Context
+  ##
+  containerSecurityContext:
+    enabled: false
+  ## headplane ServiceAccount configuration
+  ##
+  serviceAccount:
+    ## @param headplane.serviceAccount.create Create a dedicated ServiceAccount for headplane
+    ##
+    create: true
+    ## @param headplane.serviceAccount.name Name of the ServiceAccount to use. Defaults to "<fullname>-headplane".
+    ##
+    name: ""
+    ## @param headplane.serviceAccount.annotations Additional annotations for the headplane ServiceAccount
+    ##
+    annotations: {}
+    ## @param headplane.serviceAccount.automountServiceAccountToken Automount service account token (required for Kubernetes integration)
+    ##
+    automountServiceAccountToken: true
+  ## headplane RBAC configuration
+  ##
+  rbac:
+    ## @param headplane.rbac.create Create Role and RoleBinding for headplane (required for Kubernetes integration)
+    ##
+    create: true
+  ## headplane service configuration
+  ##
+  service:
+    ## @param headplane.service.type headplane service type
+    ##
+    type: ClusterIP
+    ## @param headplane.service.port headplane service port
+    ##
+    port: 3000
+    ## @param headplane.service.nodePort headplane service node port (for NodePort/LoadBalancer type)
+    ##
+    nodePort: ""
+    ## @param headplane.service.clusterIP headplane service Cluster IP
+    ##
+    clusterIP: ""
+    ## @param headplane.service.annotations Additional custom annotations for the headplane service
+    ##
+    annotations: {}
+  ## @param headplane.adminPath Path prefix routed to headplane in the shared ingress/httproute
+  ##
+  adminPath: /admin

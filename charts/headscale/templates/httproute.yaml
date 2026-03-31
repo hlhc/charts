@@ -56,6 +56,18 @@ spec:
       matches:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+    {{- if $.Values.headplane.enabled }}
+    - backendRefs:
+        - group: ""
+          kind: Service
+          weight: 1
+          name: {{ printf "%s-headplane" $serviceName }}
+          port: {{ $.Values.headplane.service.port }}
+      matches:
+        - path:
+            type: PathPrefix
+            value: {{ $.Values.headplane.adminPath }}
+    {{- end }}
     {{- end }}
 {{- end }}
 {{- end }}

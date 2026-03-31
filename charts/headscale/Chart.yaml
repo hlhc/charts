@@ -26,4 +26,4 @@ name: headscale
 sources:
   - https://github.com/juanfont/headscale
   - https://github.com/juanfont/headscale/pkgs/container/headscale
-version: 0.1.0
+version: 0.1.1

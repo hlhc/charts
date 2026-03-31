@@ -2,7 +2,7 @@
 
 # headscale
 
-A Helm chart for [headscale](https://headscale.net), an open source, self-hosted implementation of the Tailscale control server.
+A Helm chart for [headscale](https://headscale.net), an open source, self-hosted implementation of the Tailscale control server, with optional [headplane](https://github.com/tale/headplane) web UI.
 
 ## Versioning policy
 
@@ -19,7 +19,7 @@ helm install my-release oci://ghcr.io/hlhc/charts/headscale
 
 ## Introduction
 
-This chart bootstraps headscale as a StatefulSet on a [Kubernetes](https://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
+This chart bootstraps headscale as a StatefulSet on a [Kubernetes](https://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager. It optionally deploys [headplane](https://github.com/tale/headplane) — a web UI for managing headscale — as a second StatefulSet in the same release.
 
 ## Prerequisites
 
@@ -135,6 +135,98 @@ Learn more about [sidecar containers](https://kubernetes.io/docs/concepts/worklo
 ### Pod affinity
 
 This chart allows custom affinity with headscale.affinity, or preset affinity settings with headscale.podAffinityPreset, headscale.podAntiAffinityPreset, and headscale.nodeAffinityPreset.
+
+## headplane
+
+[headplane](https://github.com/tale/headplane) is a web UI for managing headscale. When enabled it runs as a separate StatefulSet and shares the same ingress/HTTPRoute as headscale, with headscale traffic routed to `/` and headplane traffic to `/admin` (configurable via `headplane.adminPath`).
+
+### Enabling headplane
+
+```yaml
+headscale:
+  config:
+    serverUrl: https://headscale.example.com
+
+headplane:
+  enabled: true
+  config:
+    headscale:
+      url: https://headscale.example.com
+
+ingress:
+  enabled: true
+  hostname: headscale.example.com
+  tls: true
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+```
+
+This exposes:
+- `https://headscale.example.com/` → headscale API
+- `https://headscale.example.com/admin` → headplane UI
+
+### headplane API key
+
+headplane needs a headscale API key to manage the server. Provide it directly or reference an existing Secret:
+
+```yaml
+headplane:
+  enabled: true
+  apiKey:
+    value: my-api-key
+```
+
+Or use an existing Secret with the key `HEADPLANE_OIDC__HEADSCALE_API_KEY`:
+
+```yaml
+headplane:
+  enabled: true
+  apiKey:
+    existingSecret: my-headplane-api-key-secret
+```
+
+### headplane cookie secret
+
+By default a random 32-character cookie secret is generated on each `helm upgrade`, which invalidates all active headplane sessions. Set `headplane.cookieSecret` explicitly to preserve sessions across upgrades:
+
+```yaml
+headplane:
+  cookieSecret: a-stable-32-character-secret-here
+```
+
+### headplane OIDC
+
+headplane supports OIDC for user authentication. Supply provider credentials via an existing Secret:
+
+```yaml
+headplane:
+  oidc:
+    enabled: true
+    issuer: https://auth.example.com
+    client_id: headplane
+    redirect_uri: https://headscale.example.com/admin/oidc/callback
+    existingSecret: my-oidc-secret  # must contain OIDC client_secret env var
+    disable_api_key_login: true
+```
+
+### Routing headplane with Gateway API
+
+```yaml
+headplane:
+  enabled: true
+  adminPath: /admin
+
+route:
+  main:
+    enabled: true
+    parentRefs:
+      - name: my-gateway
+        namespace: kube-system
+    hostnames:
+      - headscale.example.com
+```
+
+The HTTPRoute will include two rules: `/` → headscale and `/admin` → headplane.
 
 ## Upgrading
 
@@ -421,6 +513,54 @@ helm uninstall my-release
 | `metrics.serviceMonitor.relabelings`          | Specify general relabeling                                                                             | `[]`    |
 | `metrics.serviceMonitor.selector`             | Prometheus instance selector labels                                                                    | `{}`    |
 
+### Headplane Parameters
+
+| Name                                                        | Description                                                                                                                                 | Value                           |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `headplane.enabled`                                         | Enable headplane as a sidecar container alongside headscale                                                                                 | `false`                         |
+| `headplane.image.registry`                                  | headplane image registry                                                                                                                    | `ghcr.io`                       |
+| `headplane.image.repository`                                | headplane image repository                                                                                                                  | `tale/headplane`                |
+| `headplane.image.tag`                                       | headplane image tag                                                                                                                         | `0.6.0`                         |
+| `headplane.image.digest`                                    | headplane image digest in the way sha256:aa....                                                                                             | `""`                            |
+| `headplane.image.pullPolicy`                                | headplane image pull policy                                                                                                                 | `IfNotPresent`                  |
+| `headplane.image.pullSecrets`                               | headplane image pull secrets                                                                                                                | `[]`                            |
+| `headplane.containerPort`                                   | headplane container port                                                                                                                    | `3000`                          |
+| `headplane.config.server.host`                              | Server host address                                                                                                                         | `0.0.0.0`                       |
+| `headplane.config.server.port`                              | Server port                                                                                                                                 | `3000`                          |
+| `headplane.config.server.cookie_secure`                     | Use secure cookies (set to false for HTTP)                                                                                                  | `true`                          |
+| `headplane.config.headscale.url`                            | URL of the headscale server                                                                                                                 | `https://headscale.example.com` |
+| `headplane.config.headscale.config_path`                    | Path to headscale config file inside the container                                                                                          | `/etc/headscale/config.yaml`    |
+| `headplane.config.headscale.config_strict`                  | Enable strict config parsing                                                                                                                | `true`                          |
+| `headplane.config.integration.kubernetes.enabled`           | Enable Kubernetes integration                                                                                                               | `true`                          |
+| `headplane.config.integration.kubernetes.validate_manifest` | Validate Kubernetes manifests on config write                                                                                               | `true`                          |
+| `headplane.oidc.enabled`                                    | Enable OIDC authentication for headplane                                                                                                    | `false`                         |
+| `headplane.oidc.issuer`                                     | OIDC issuer URL                                                                                                                             | `""`                            |
+| `headplane.oidc.disable_api_key_login`                      | Disable API key login when OIDC is enabled                                                                                                  | `true`                          |
+| `headplane.oidc.token_endpoint_auth_method`                 | OIDC token endpoint auth method                                                                                                             | `client_secret_post`            |
+| `headplane.oidc.redirect_uri`                               | OIDC redirect URI (e.g. https://headplane.example.com/admin/oidc/callback)                                                                  | `""`                            |
+| `headplane.oidc.client_id`                                  | OIDC client ID                                                                                                                              | `""`                            |
+| `headplane.oidc.existingSecret`                             | Name of an existing secret containing OIDC credentials (mounted as envFrom)                                                                 | `""`                            |
+| `headplane.apiKey.value`                                    | Headscale API key value (stored in a managed Secret). Ignored if existingSecret is set.                                                     | `""`                            |
+| `headplane.apiKey.existingSecret`                           | Name of an existing secret containing the API key.                                                                                          | `""`                            |
+| `headplane.cookieSecret`                                    | Cookie secret for headplane sessions.                                                                                                       | `""`                            |
+| `headplane.extraEnvVars`                                    | Array with extra environment variables to add to the headplane container                                                                    | `[]`                            |
+| `headplane.extraEnvVarsCM`                                  | Name of existing ConfigMap containing extra env vars for headplane                                                                          | `""`                            |
+| `headplane.extraEnvVarsSecret`                              | Name of existing Secret containing extra env vars for headplane                                                                             | `""`                            |
+| `headplane.resourcesPreset`                                 | Set headplane container resources according to one common preset (allowed values: none, nano, micro, small, medium, large, xlarge, 2xlarge) | `nano`                          |
+| `headplane.resources`                                       | Set headplane container requests and limits for different resources like CPU or memory                                                      | `{}`                            |
+| `headplane.containerSecurityContext.enabled`                | Enable headplane container Security Context                                                                                                 | `false`                         |
+| `headplane.serviceAccount.create`                           | Create a dedicated ServiceAccount for headplane                                                                                             | `true`                          |
+| `headplane.serviceAccount.name`                             | Name of the ServiceAccount to use. Defaults to "<fullname>-headplane".                                                                      | `""`                            |
+| `headplane.serviceAccount.annotations`                      | Additional annotations for the headplane ServiceAccount                                                                                     | `{}`                            |
+| `headplane.serviceAccount.automountServiceAccountToken`     | Automount service account token (required for Kubernetes integration)                                                                       | `true`                          |
+| `headplane.rbac.create`                                     | Create Role and RoleBinding for headplane (required for Kubernetes integration)                                                             | `true`                          |
+| `headplane.service.type`                                    | headplane service type                                                                                                                      | `ClusterIP`                     |
+| `headplane.service.port`                                    | headplane service port                                                                                                                      | `3000`                          |
+| `headplane.service.nodePort`                                | headplane service node port (for NodePort/LoadBalancer type)                                                                                | `""`                            |
+| `headplane.service.clusterIP`                               | headplane service Cluster IP                                                                                                                | `""`                            |
+| `headplane.service.annotations`                             | Additional custom annotations for the headplane service                                                                                     | `{}`                            |
+| `headplane.adminPath`                                       | Path prefix routed to headplane in the shared ingress/httproute                                                                             | `/admin`                        |
+
 See <https://github.com/bitnami/readme-generator-for-helm> to regenerate this section from values.yaml and values.schema.json.
 
 Specify each parameter using the --set key=value[,key=value] argument to helm install. For example:
@@ -463,6 +603,25 @@ curl http://localhost:8080/health
 ```console
 kubectl exec -it statefulset/my-release-headscale -- headscale --help
 ```
+
+### headplane not loading
+
+```console
+kubectl logs -l app.kubernetes.io/component=headplane --tail=100
+```
+
+Common causes:
+- `headplane.config.headscale.url` does not match the public URL headscale is reachable at.
+- The headscale API key is missing or incorrect — check `headplane.apiKey.value` or `headplane.apiKey.existingSecret`.
+- `headplane.cookieSecret` is unset and sessions are being invalidated on every upgrade.
+
+### Access headplane locally
+
+```console
+kubectl port-forward svc/my-release-headscale-headplane 3000:3000
+```
+
+Then open `http://localhost:3000/admin` in your browser.
 
 ## License
 
