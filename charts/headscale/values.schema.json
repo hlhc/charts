@@ -909,6 +909,11 @@
                             "type": "string",
                             "description": "Maximum number/percentage of pods that may be made unavailable. Defaults to `1` if both `headscale.pdb.minAvailable` and `headscale.pdb.maxUnavailable` are empty.",
                             "default": ""
+                        },
+                        "unhealthyPodEvictionPolicy": {
+                            "type": "string",
+                            "description": "Policy for evicting unhealthy pods. `AlwaysAllow` allows draining nodes even when the pod is not ready, preventing stuck drains. Requires Kubernetes >= 1.26.",
+                            "default": "AlwaysAllow"
                         }
                     }
                 },

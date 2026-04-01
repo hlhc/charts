@@ -469,11 +469,13 @@ headscale:
   ## @param headscale.pdb.create Enable/disable a Pod Disruption Budget creation
   ## @param headscale.pdb.minAvailable Minimum number/percentage of pods that should remain scheduled
   ## @param headscale.pdb.maxUnavailable Maximum number/percentage of pods that may be made unavailable. Defaults to `1` if both `headscale.pdb.minAvailable` and `headscale.pdb.maxUnavailable` are empty.
+  ## @param headscale.pdb.unhealthyPodEvictionPolicy Policy for evicting unhealthy pods. `AlwaysAllow` allows draining nodes even when the pod is not ready, preventing stuck drains. Requires Kubernetes >= 1.26.
   ##
   pdb:
     create: true
     minAvailable: ""
     maxUnavailable: ""
+    unhealthyPodEvictionPolicy: AlwaysAllow
   ## Autoscaling configuration
   ##
   autoscaling:
