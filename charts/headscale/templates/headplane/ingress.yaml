@@ -1,9 +1,0 @@
-{{- /*
-Copyright Cyrus Ho. All Rights Reserved.
-SPDX-License-Identifier: APACHE-2.0
-*/}}
-{{- /*
-Headplane ingress routing is merged into the main ingress.yaml and httproute.yaml.
-When headplane.enabled=true the shared ingress/httproute adds a path rule for
-headplane.adminPath (default: /admin) pointing to the headplane service.
-*/}}
